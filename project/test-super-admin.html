@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SUPER_ADMIN - CongoMuv</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: white;
+            color: #333;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-super-admin {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-super-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-admin {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-admin:hover {
+            background: #2563eb;
+        }
+        .btn-logout {
+            background: #6b7280;
+            color: white;
+        }
+        .btn-logout:hover {
+            background: #4b5563;
+        }
+        .status {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .badge-super-admin {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .badge-admin {
+            background: #3b82f6;
+            color: white;
+        }
+        .badge-none {
+            background: #9ca3af;
+            color: white;
+        }
+        .checklist {
+            background: #ecfdf5;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .checklist h3 {
+            color: #10b981;
+            margin-top: 0;
+        }
+        .checklist ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .checklist li {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ Test SUPER_ADMIN - CongoMuv</h1>
+        <p>Utilisez cette page pour définir votre rôle et tester l'interface d'administration.</p>
+
+        <div class="status">
+            <h3>📊 Statut actuel</h3>
+            <div class="status-item">
+                <span><strong>Rôle :</strong></span>
+                <span id="current-role" class="badge badge-none">NON CONNECTÉ</span>
+            </div>
+            <div class="status-item">
+                <span><strong>Email :</strong></span>
+                <span id="current-email">-</span>
+            </div>
+            <div class="status-item">
+                <span><strong>Token :</strong></span>
+                <span id="current-token">Non défini</span>
+            </div>
+        </div>
+
+        <h3>🎯 Actions rapides</h3>
+        <div>
+            <button class="btn btn-super-admin" onclick="setSuperAdmin()">
+                🛡️ Devenir SUPER_ADMIN
+            </button>
+            <button class="btn btn-admin" onclick="setAdmin()">
+                👤 Devenir ADMIN
+            </button>
+            <button class="btn btn-logout" onclick="logout()">
+                🚪 Se déconnecter
+            </button>
+        </div>
+
+        <div class="checklist">
+            <h3>✅ Checklist SUPER_ADMIN</h3>
+            <ul>
+                <li>✓ Badge "🛡️ SUPER ADMIN" visible dans la sidebar</li>
+                <li>✓ Badge "SUPER ADMIN - Contrôle Total" dans le header</li>
+                <li>✓ Section "Opérateurs" visible (exclusive SUPER_ADMIN)</li>
+                <li>✓ Section "Gestion des accès" visible (exclusive SUPER_ADMIN)</li>
+                <li>✓ Messages de confirmation en violet sous les titres</li>
+                <li>✓ Option "SUPER_ADMIN (Contrôle total)" dans les invitations</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #fef3c7; border-radius: 10px; color: #92400e;">
+            <strong>⚠️ Note :</strong> Après avoir cliqué sur un bouton, vous serez redirigé vers le dashboard admin.
+            Si vous êtes déjà sur cette page, elle se rechargera automatiquement.
+        </div>
+
+        <div style="margin-top: 20px; text-align: center; opacity: 0.6; font-size: 14px;">
+            <p>Ouvrir le dashboard admin : <a href="http://localhost:5174/#/admin" target="_blank" rel="noopener noreferrer">http://localhost:5174/#/admin</a></p>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus() {
+            const role = localStorage.getItem('app_role') || 'NON CONNECTÉ';
+            const email = localStorage.getItem('app_email') || '-';
+            const token = localStorage.getItem('app_jwt') || 'Non défini';
+
+            document.getElementById('current-role').textContent = role;
+            document.getElementById('current-email').textContent = email;
+            document.getElementById('current-token').textContent = token.substring(0, 30) + '...';
+
+            // Mettre à jour le badge
+            const roleBadge = document.getElementById('current-role');
+            roleBadge.className = 'badge ' + (
+                role === 'SUPER_ADMIN' ? 'badge-super-admin' :
+                role === 'ADMIN' ? 'badge-admin' :
+                'badge-none'
+            );
+        }
+
+        function setSuperAdmin() {
+            localStorage.setItem('app_role', 'SUPER_ADMIN');
+            localStorage.setItem('app_email', 'superadmin@congomuv.cd');
+            localStorage.setItem('app_jwt', 'test-super-admin-token-' + Date.now());
+            alert('✅ Vous êtes maintenant SUPER_ADMIN!\n\nVous allez être redirigé vers le dashboard admin.');
+            window.location.href = 'http://localhost:5174/#/admin';
+        }
+
+        function setAdmin() {
+            localStorage.setItem('app_role', 'ADMIN');
+            localStorage.setItem('app_email', 'admin@congomuv.cd');
+            localStorage.setItem('app_jwt', 'test-admin-token-' + Date.now());
+            alert('✅ Vous êtes maintenant ADMIN!\n\nVous allez être redirigé vers le dashboard admin.');
+            window.location.href = 'http://localhost:5174/#/admin';
+        }
+
+        function logout() {
+            localStorage.removeItem('app_role');
+            localStorage.removeItem('app_email');
+            localStorage.removeItem('app_jwt');
+            alert('🚪 Déconnexion effectuée!');
+            updateStatus();
+        }
+
+        // Mettre à jour le statut au chargement
+        updateStatus();
+
+        // Mettre à jour le statut toutes les secondes
+        setInterval(updateStatus, 1000);
+    </script>
+</body>
+</html>

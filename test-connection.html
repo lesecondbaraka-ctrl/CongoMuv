@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Connexion Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: #22c55e; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        .pending { color: #f59e0b; }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover { background: #059669; }
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test de connexion Backend CongoMuv</h1>
+    
+    <div class="test-box">
+        <h2>Configuration</h2>
+        <p><strong>URL Backend:</strong> <span id="backend-url">http://localhost:3002</span></p>
+        <input type="text" id="url-input" value="http://localhost:3002" style="width: 300px; padding: 8px; margin-right: 10px;">
+        <button onclick="updateUrl()">Changer URL</button>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 1: Health Check</h2>
+        <button onclick="testHealth()">Tester /health</button>
+        <p id="health-status" class="pending">En attente...</p>
+        <pre id="health-result"></pre>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 2: Connexion Supabase</h2>
+        <button onclick="testSupabase()">Tester /api/debug/test-supabase</button>
+        <p id="supabase-status" class="pending">En attente...</p>
+        <pre id="supabase-result"></pre>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 3: Inscription (simulation)</h2>
+        <button onclick="testSignup()">Tester /api/auth/signup</button>
+        <p id="signup-status" class="pending">En attente...</p>
+        <pre id="signup-result"></pre>
+    </div>
+
+    <div class="test-box">
+        <h2>📋 Diagnostic</h2>
+        <ul id="diagnostic-list">
+            <li>Ouvrez la console développeur (F12) pour voir les détails</li>
+            <li>Vérifiez que le backend est démarré sur le port 3002</li>
+            <li>Si vous voyez "CORS policy", le backend bloque les requêtes</li>
+            <li>Si vous voyez "NetworkError", le backend n'est pas accessible</li>
+        </ul>
+    </div>
+
+    <script>
+        let backendUrl = 'http://localhost:3002';
+
+        function updateUrl() {
+            backendUrl = document.getElementById('url-input').value;
+            document.getElementById('backend-url').textContent = backendUrl;
+            console.log('URL mise à jour:', backendUrl);
+        }
+
+        async function testHealth() {
+            const statusEl = document.getElementById('health-status');
+            const resultEl = document.getElementById('health-result');
+            
+            statusEl.className = 'pending';
+            statusEl.textContent = '⏳ Test en cours...';
+            resultEl.textContent = '';
+
+            try {
+                console.log('🔍 Test Health Check:', backendUrl + '/health');
+                const response = await fetch(backendUrl + '/health');
+                const data = await response.json();
+                
+                statusEl.className = 'success';
+                statusEl.textContent = '✅ Backend accessible !';
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                console.log('✅ Health check réussi:', data);
+            } catch (error) {
+                statusEl.className = 'error';
+                statusEl.textContent = '❌ Erreur: ' + error.message;
+                resultEl.textContent = error.stack;
+                console.error('❌ Health check échoué:', error);
+            }
+        }
+
+        async function testSupabase() {
+            const statusEl = document.getElementById('supabase-status');
+            const resultEl = document.getElementById('supabase-result');
+            
+            statusEl.className = 'pending';
+            statusEl.textContent = '⏳ Test en cours...';
+            resultEl.textContent = '';
+
+            try {
+                console.log('🔍 Test Supabase:', backendUrl + '/api/debug/test-supabase');
+                const response = await fetch(backendUrl + '/api/debug/test-supabase');
+                const data = await response.json();
+                
+                statusEl.className = 'success';
+                statusEl.textContent = '✅ Connexion Supabase OK !';
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                console.log('✅ Test Supabase réussi:', data);
+            } catch (error) {
+                statusEl.className = 'error';
+                statusEl.textContent = '❌ Erreur: ' + error.message;
+                resultEl.textContent = error.stack;
+                console.error('❌ Test Supabase échoué:', error);
+            }
+        }
+
+        async function testSignup() {
+            const statusEl = document.getElementById('signup-status');
+            const resultEl = document.getElementById('signup-result');
+            
+            statusEl.className = 'pending';
+            statusEl.textContent = '⏳ Test en cours...';
+            resultEl.textContent = '';
+
+            const testData = {
+                email: 'test' + Date.now() + '@example.com',
+                password: 'Test123!@#',
+                full_name: 'Test User',
+                phone: '+243123456789'
+            };
+
+            try {
+                console.log('🔍 Test Signup:', backendUrl + '/api/auth/signup', testData);
+                const response = await fetch(backendUrl + '/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    statusEl.className = 'success';
+                    statusEl.textContent = '✅ Inscription réussie !';
+                } else {
+                    statusEl.className = 'error';
+                    statusEl.textContent = '⚠️ Erreur serveur: ' + (data.error || 'Inconnue');
+                }
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                console.log('📝 Résultat signup:', data);
+            } catch (error) {
+                statusEl.className = 'error';
+                statusEl.textContent = '❌ Erreur réseau: ' + error.message;
+                resultEl.textContent = error.stack;
+                console.error('❌ Test signup échoué:', error);
+            }
+        }
+
+        // Auto-test au chargement
+        window.addEventListener('load', () => {
+            console.log('🚀 Page de test chargée');
+            console.log('Backend URL:', backendUrl);
+            console.log('Cliquez sur les boutons pour tester la connexion');
+        });
+    </script>
+</body>
+</html>

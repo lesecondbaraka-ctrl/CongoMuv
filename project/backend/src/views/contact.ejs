@@ -1,0 +1,314 @@
+<%- include('partials/header', { title: 'Contactez-nous' }) %>
+
+<!-- Hero Section -->
+<section class="bg-blue-700 text-white py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">Contactez-nous</h1>
+        <p class="text-xl max-w-3xl mx-auto">Une question, une suggestion ou besoin d'aide ? Notre équipe est là pour vous répondre.</p>
+    </div>
+</section>
+
+<!-- Contact Info & Form -->
+<section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="lg:grid lg:grid-cols-2 lg:gap-12">
+            <!-- Contact Information -->
+            <div class="mb-12 lg:mb-0">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Informations de contact</h2>
+                <p class="text-gray-600 mb-8">Notre équipe est disponible pour répondre à toutes vos questions. N'hésitez pas à nous contacter par téléphone, email ou via le formulaire de contact.</p>
+                
+                <div class="space-y-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3 text-blue-600">
+                            <i class="fas fa-map-marker-alt text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900">Adresse</h3>
+                            <p class="mt-1 text-gray-600">123 Avenue de la Paix, Gombe<br>Kinshasa, République Démocratique du Congo</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3 text-blue-600">
+                            <i class="fas fa-phone-alt text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900">Téléphone</h3>
+                            <p class="mt-1 text-gray-600">+243 81 234 5678<br>+243 89 876 5432</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3 text-blue-600">
+                            <i class="fas fa-envelope text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900">Email</h3>
+                            <p class="mt-1 text-gray-600">contact@congomuv.cd<br>support@congomuv.cd</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3 text-blue-600">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-medium text-gray-900">Heures d'ouverture</h3>
+                            <p class="mt-1 text-gray-600">Lundi - Vendredi: 8h00 - 18h00<br>Samedi: 9h00 - 13h00<br>Dimanche: Fermé</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Suivez-nous</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-blue-600 hover:text-blue-800">
+                            <span class="sr-only">Facebook</span>
+                            <i class="fab fa-facebook-f text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-blue-400 hover:text-blue-600">
+                            <span class="sr-only">Twitter</span>
+                            <i class="fab fa-twitter text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-pink-600 hover:text-pink-800">
+                            <span class="sr-only">Instagram</span>
+                            <i class="fab fa-instagram text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-blue-700 hover:text-blue-900">
+                            <span class="sr-only">LinkedIn</span>
+                            <i class="fab fa-linkedin-in text-2xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Form -->
+            <div class="bg-gray-50 p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h2>
+                
+                <% if (locals.message) { %>
+                    <div class="mb-6 p-4 rounded-md bg-green-100 border border-green-300 text-green-800">
+                        <%= message %>
+                    </div>
+                <% } %>
+                
+                <% if (locals.error) { %>
+                    <div class="mb-6 p-4 rounded-md bg-red-100 border border-red-300 text-red-800">
+                        <%= error %>
+                    </div>
+                <% } %>
+                
+                <form action="/contact" method="POST" class="space-y-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Votre nom complet <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                               value="<%= locals.formData ? formData.name : '' %>">
+                    </div>
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Votre email <span class="text-red-500">*</span></label>
+                        <input type="email" id="email" name="email" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                               value="<%= locals.formData ? formData.email : '' %>">
+                    </div>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Téléphone (optionnel)</label>
+                        <input type="tel" id="phone" name="phone" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                               value="<%= locals.formData ? formData.phone : '' %>">
+                    </div>
+                    
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Sujet <span class="text-red-500">*</span></label>
+                        <select id="subject" name="subject" required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="" disabled selected>Sélectionnez un sujet</option>
+                            <option value="general" <%= locals.formData && formData.subject === 'general' ? 'selected' : '' %>>Question générale</option>
+                            <option value="support" <%= locals.formData && formData.subject === 'support' ? 'selected' : '' %>>Support technique</option>
+                            <option value="partnership" <%= locals.formData && formData.subject === 'partnership' ? 'selected' : '' %>>Partenariat</option>
+                            <option value="feedback" <%= locals.formData && formData.subject === 'feedback' ? 'selected' : '' %>>Retour d'expérience</option>
+                            <option value="other" <%= locals.formData && formData.subject === 'other' ? 'selected' : '' %>>Autre</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Votre message <span class="text-red-500">*</span></label>
+                        <textarea id="message" name="message" rows="5" required
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"><%= locals.formData ? formData.message : '' %></textarea>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input id="privacy" name="privacy" type="checkbox" required
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="privacy" class="ml-2 block text-sm text-gray-700">
+                            J'accepte la <a href="/privacy" class="text-blue-600 hover:text-blue-800">politique de confidentialité</a> et les <a href="/terms" class="text-blue-600 hover:text-blue-800">conditions d'utilisation</a>.
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-center justify-end">
+                        <button type="submit" class="bg-blue-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-800 transition duration-300">
+                            Envoyer le message
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Map Section -->
+<section class="bg-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">Trouvez-nous sur la carte</h2>
+        <div class="rounded-lg overflow-hidden shadow-lg">
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.470495058442!2d15.297771515330901!3d-4.321923246988316!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a6a31c3c1c3c1c3%3A0x1a6a31c3c1c3c1c3!2sKinshasa%2C%20R%C3%A9publique%20D%C3%A9mocratique%20du%20Congo!5e0!3m2!1sfr!2scd!4v1620000000000!5m2!1sfr!2scd" 
+                width="100%" 
+                height="450" 
+                style="border:0;" 
+                allowfullscreen="" 
+                loading="lazy"
+                class="w-full h-96">
+            </iframe>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="py-16 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Questions fréquemment posées</h2>
+        
+        <div class="space-y-4">
+            <!-- FAQ Item 1 -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <button class="faq-question w-full px-6 py-4 text-left font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out flex justify-between items-center">
+                    <span>Comment puis-je réserver un trajet ?</span>
+                    <i class="fas fa-chevron-down transition-transform duration-200"></i>
+                </button>
+                <div class="faq-answer px-6 py-4 bg-white hidden">
+                    <p class="text-gray-600">Pour réserver un trajet, créez d'abord un compte sur notre plateforme. Ensuite, connectez-vous, entrez votre destination, sélectionnez votre trajet préféré parmi les options disponibles, et procédez au paiement en ligne. Vous recevrez une confirmation par email avec les détails de votre réservation.</p>
+                </div>
+            </div>
+            
+            <!-- FAQ Item 2 -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <button class="faq-question w-full px-6 py-4 text-left font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out flex justify-between items-center">
+                    <span>Quels sont les moyens de paiement acceptés ?</span>
+                    <i class="fas fa-chevron-down transition-transform duration-200"></i>
+                </button>
+                <div class="faq-answer px-6 py-4 bg-white hidden">
+                    <p class="text-gray-600">Nous acceptons plusieurs moyens de paiement pour votre commodité : cartes bancaires (Visa, Mastercard), Mobile Money (Airtel Money, Orange Money, M-Pesa) et paiement en espèces au chauffeur (uniquement pour les trajets intra-ville). Pour les longs trajets, le paiement en ligne est obligatoire.</p>
+                </div>
+            </div>
+            
+            <!-- FAQ Item 3 -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <button class="faq-question w-full px-6 py-4 text-left font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out flex justify-between items-center">
+                    <span>Comment annuler une réservation ?</span>
+                    <i class="fas fa-chevron-down transition-transform duration-200"></i>
+                </button>
+                <div class="faq-answer px-6 py-4 bg-white hidden">
+                    <p class="text-gray-600">Vous pouvez annuler votre réservation depuis votre espace personnel dans la section "Mes réservations". Selon le moment de l'annulation, des frais d'annulation peuvent s'appliquer. Les annulations effectuées plus de 24 heures avant le départ donnent droit à un remboursement intégral. Pour les annulations de dernière minute, veuillez nous contacter directement.</p>
+                </div>
+            </div>
+            
+            <!-- FAQ Item 4 -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <button class="faq-question w-full px-6 py-4 text-left font-medium text-gray-900 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out flex justify-between items-center">
+                    <span>Comment devenir chauffeur partenaire ?</span>
+                    <i class="fas fa-chevron-down transition-transform duration-200"></i>
+                </button>
+                <div class="faq-answer px-6 py-4 bg-white hidden">
+                    <p class="text-gray-600">Pour rejoindre notre réseau de chauffeurs partenaires, vous devez remplir le formulaire de candidature en ligne. Nous exigeons un permis de conduire valide, un casier judiciaire vierge, une assurance véhicule à jour et un véhicule répondant à nos normes de sécurité. Notre équipe vous contactera pour les étapes suivantes après réception de votre candidature.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 text-center">
+            <p class="text-gray-600">Vous ne trouvez pas de réponse à votre question ?</p>
+            <a href="/faq" class="mt-2 inline-block text-blue-600 font-medium hover:text-blue-800">Consultez notre FAQ complète</a>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="bg-blue-700 text-white py-16">
+    <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold mb-6">Vous avez d'autres questions ?</h2>
+        <p class="text-xl mb-8">Notre équipe du service client est disponible 24/7 pour vous aider avec toutes vos demandes.</p>
+        <div class="space-x-4">
+            <a href="tel:+243812345678" class="bg-white text-blue-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition duration-300 inline-block">
+                <i class="fas fa-phone-alt mr-2"></i> Appelez-nous
+            </a>
+            <a href="mailto:support@congomuv.cd" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-blue-700 transition duration-300 inline-block">
+                <i class="fas fa-envelope mr-2"></i> Envoyez un email
+            </a>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Script pour les FAQ accordéon
+    document.addEventListener('DOMContentLoaded', function() {
+        const faqQuestions = document.querySelectorAll('.faq-question');
+        
+        faqQuestions.forEach(question => {
+            question.addEventListener('click', () => {
+                const answer = question.nextElementSibling;
+                const icon = question.querySelector('i');
+                
+                // Fermer toutes les autres réponses
+                faqQuestions.forEach(q => {
+                    if (q !== question) {
+                        q.nextElementSibling.classList.add('hidden');
+                        q.querySelector('i').classList.remove('transform', 'rotate-180');
+                        q.classList.remove('bg-gray-100');
+                        q.classList.add('bg-gray-50');
+                    }
+                });
+                
+                // Basculer la réponse actuelle
+                answer.classList.toggle('hidden');
+                icon.classList.toggle('transform');
+                icon.classList.toggle('rotate-180');
+                
+                // Changer la couleur de fond du bouton
+                if (answer.classList.contains('hidden')) {
+                    question.classList.remove('bg-gray-100');
+                    question.classList.add('bg-gray-50');
+                } else {
+                    question.classList.remove('bg-gray-50');
+                    question.classList.add('bg-gray-100');
+                }
+            });
+        });
+        
+        // Validation du formulaire
+        const contactForm = document.querySelector('form');
+        if (contactForm) {
+            contactForm.addEventListener('submit', function(e) {
+                let isValid = true;
+                const requiredFields = this.querySelectorAll('[required]');
+                
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        isValid = false;
+                        field.classList.add('border-red-500');
+                    } else {
+                        field.classList.remove('border-red-500');
+                    }
+                });
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Veuillez remplir tous les champs obligatoires marqués d\'un astérisque (*)');
+                }
+            });
+        }
+    });
+</script>
+
+<%- include('partials/footer') %>

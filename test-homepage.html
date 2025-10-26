@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page d'Accueil CongoMuv</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .test-link:hover {
+            background: #059669;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test de la Page d'Accueil CongoMuv</h1>
+        
+        <div class="status info">
+            <strong>Instructions :</strong> Cliquez sur les liens ci-dessous pour tester le comportement de l'application.
+        </div>
+
+        <h2>Tests de Navigation</h2>
+        
+        <a href="http://localhost:5173/" class="test-link" target="_blank">
+            🏠 Page d'Accueil (racine)
+        </a>
+        
+        <a href="http://localhost:5173/#/" class="test-link" target="_blank">
+            🏠 Page d'Accueil (#/)
+        </a>
+        
+        <a href="http://localhost:5173/#/login" class="test-link" target="_blank">
+            🔐 Page de Connexion
+        </a>
+
+        <h2>Résultats Attendus</h2>
+        
+        <div class="status success">
+            <strong>✅ Succès :</strong> La page d'accueil devrait maintenant s'afficher directement au lancement de l'application, même pour les utilisateurs non connectés.
+        </div>
+
+        <div class="status info">
+            <strong>ℹ️ Comportement :</strong>
+            <ul>
+                <li>Utilisateurs non connectés : voient la page d'accueil avec le formulaire de recherche</li>
+                <li>Utilisateurs connectés : peuvent rester sur la page d'accueil s'ils le souhaitent</li>
+                <li>Plus de redirection automatique vers la page de login</li>
+            </ul>
+        </div>
+
+        <h2>Vérifications</h2>
+        <ul>
+            <li>✅ La page d'accueil s'affiche au lancement</li>
+            <li>✅ Le formulaire de recherche est visible</li>
+            <li>✅ Les boutons "Connexion" et "S'inscrire" sont présents</li>
+            <li>✅ Pas de redirection automatique vers /login</li>
+        </ul>
+    </div>
+
+    <script>
+        // Vérifier si le serveur est en cours d'exécution
+        fetch('http://localhost:5173/')
+            .then(response => {
+                if (response.ok) {
+                    document.querySelector('.status.info').innerHTML = 
+                        '<strong>✅ Serveur détecté :</strong> L\'application CongoMuv est en cours d\'exécution sur le port 5173.';
+                    document.querySelector('.status.info').className = 'status success';
+                }
+            })
+            .catch(error => {
+                document.querySelector('.status.info').innerHTML = 
+                    '<strong>⚠️ Serveur non détecté :</strong> Assurez-vous que l\'application est démarrée avec <code>npm run dev</code>.';
+                document.querySelector('.status.info').className = 'status info';
+            });
+    </script>
+</body>
+</html>

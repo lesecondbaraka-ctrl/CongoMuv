@@ -1,0 +1,122 @@
+[
+  {
+    "id": "1",
+    "category": "Réservation",
+    "question": "Comment réserver un billet sur CongoMuv ?",
+    "answer": "Pour réserver un billet : 1) Connectez-vous à votre compte 2) Sélectionnez votre type de transport (Train, Fluvial, Bus, Privé) 3) Choisissez votre ville de départ et d'arrivée 4) Sélectionnez la date de voyage 5) Cliquez sur 'Réserver' sur le trajet de votre choix 6) Ajoutez les passagers et confirmez."
+  },
+  {
+    "id": "2",
+    "category": "Réservation",
+    "question": "Puis-je réserver pour plusieurs passagers ?",
+    "answer": "Oui ! Lors de la réservation, vous pouvez ajouter autant de passagers que nécessaire en cliquant sur le bouton '+ Ajouter passager'. Vous devrez fournir le nom, l'âge et le téléphone de chaque passager."
+  },
+  {
+    "id": "3",
+    "category": "Réservation",
+    "question": "Y a-t-il une réduction pour les enfants ?",
+    "answer": "Oui, les enfants de moins de 3 ans bénéficient d'une réduction de 30% sur le tarif normal. Cette réduction est automatiquement appliquée lors de la réservation."
+  },
+  {
+    "id": "4",
+    "category": "Paiement",
+    "question": "Quels modes de paiement sont acceptés ?",
+    "answer": "CongoMuv accepte trois modes de paiement : 1) Mobile Money (Airtel, Orange, Vodacom) 2) Carte bancaire (Visa, Mastercard) 3) Paiement en agence (espèces au guichet). Tous les paiements sont sécurisés et chiffrés."
+  },
+  {
+    "id": "5",
+    "category": "Paiement",
+    "question": "Comment payer avec Mobile Money ?",
+    "answer": "Sélectionnez votre opérateur (Airtel, Orange ou Vodacom), entrez votre numéro de téléphone, puis composez le code USSD affiché sur votre téléphone. Le paiement est confirmé automatiquement en quelques secondes."
+  },
+  {
+    "id": "6",
+    "category": "Paiement",
+    "question": "Mon paiement est-il sécurisé ?",
+    "answer": "Absolument ! Tous les paiements sur CongoMuv sont chiffrés et sécurisés. Nous utilisons les dernières technologies de sécurité et ne stockons jamais vos informations bancaires complètes."
+  },
+  {
+    "id": "7",
+    "category": "Billets",
+    "question": "Comment recevoir mon billet numérique ?",
+    "answer": "Après confirmation du paiement, votre billet numérique est automatiquement généré et envoyé par email et SMS. Vous pouvez également le retrouver dans 'Mes Voyages' en cliquant sur le bouton '🎫 Ticket'."
+  },
+  {
+    "id": "8",
+    "category": "Billets",
+    "question": "Puis-je télécharger mon billet ?",
+    "answer": "Oui ! Une fois dans 'Mes Voyages', cliquez sur '🎫 Ticket' pour voir votre billet avec le QR Code. Vous pouvez le télécharger, le renvoyer par email ou SMS, ou simplement le présenter depuis votre téléphone à l'embarquement."
+  },
+  {
+    "id": "9",
+    "category": "Billets",
+    "question": "Que faire si je n'ai pas reçu mon billet ?",
+    "answer": "Vérifiez d'abord vos spams. Si le billet n'est toujours pas là, allez dans 'Mes Voyages', cliquez sur '🎫 Ticket' et utilisez les boutons 'Renvoyer par Email' ou 'Renvoyer par SMS'."
+  },
+  {
+    "id": "10",
+    "category": "Suivi GPS",
+    "question": "Comment suivre mon voyage en temps réel ?",
+    "answer": "Allez dans 'Mes Voyages', trouvez votre réservation confirmée et cliquez sur le bouton '📍 Suivre'. Une carte GPS s'ouvrira montrant la position actuelle du véhicule, sa vitesse et l'heure d'arrivée estimée."
+  },
+  {
+    "id": "11",
+    "category": "Suivi GPS",
+    "question": "Le suivi GPS fonctionne-t-il pour tous les trajets ?",
+    "answer": "Le suivi GPS est disponible pour les trajets dont le véhicule est équipé d'un système de localisation. Si le GPS n'est pas disponible, vous verrez quand même les informations de base de votre voyage."
+  },
+  {
+    "id": "12",
+    "category": "Compte",
+    "question": "Comment créer un compte CongoMuv ?",
+    "answer": "Cliquez sur 'Connexion' puis 'Créer un compte'. Entrez votre email, numéro de téléphone et créez un mot de passe. Vous recevrez un code OTP par SMS pour vérifier votre numéro."
+  },
+  {
+    "id": "13",
+    "category": "Compte",
+    "question": "J'ai oublié mon mot de passe, que faire ?",
+    "answer": "Sur la page de connexion, cliquez sur 'Mot de passe oublié'. Entrez votre email ou numéro de téléphone, et suivez les instructions envoyées par email/SMS pour réinitialiser votre mot de passe."
+  },
+  {
+    "id": "14",
+    "category": "Annulation",
+    "question": "Puis-je annuler ma réservation ?",
+    "answer": "Oui, vous pouvez annuler votre réservation jusqu'à 24 heures avant le départ. Allez dans 'Mes Voyages', sélectionnez la réservation et cliquez sur 'Annuler'. Les conditions de remboursement dépendent de l'opérateur."
+  },
+  {
+    "id": "15",
+    "category": "Annulation",
+    "question": "Puis-je être remboursé en cas d'annulation ?",
+    "answer": "Les remboursements dépendent du moment de l'annulation : Plus de 48h avant le départ = 100% de remboursement, Entre 24h et 48h = 50% de remboursement, Moins de 24h = Pas de remboursement. Le remboursement est crédité sous 5-7 jours ouvrables."
+  },
+  {
+    "id": "16",
+    "category": "Général",
+    "question": "CongoMuv est-il disponible dans toute la RDC ?",
+    "answer": "CongoMuv couvre actuellement les principales villes de la RDC avec des trajets par train (ONATRA), bateau (fluvial), bus (Transco) et véhicules privés. Nous ajoutons régulièrement de nouvelles destinations."
+  },
+  {
+    "id": "17",
+    "category": "Général",
+    "question": "Puis-je modifier ma réservation après confirmation ?",
+    "answer": "Les modifications dépendent de l'opérateur et du type de billet. Contactez notre support via le formulaire de contact en précisant votre référence de réservation pour vérifier les options disponibles."
+  },
+  {
+    "id": "18",
+    "category": "Embarquement",
+    "question": "Que dois-je apporter le jour du voyage ?",
+    "answer": "Vous devez avoir : 1) Votre billet numérique (sur téléphone ou imprimé) avec le QR Code 2) Une pièce d'identité valide 3) Arriver 30 minutes avant le départ pour l'enregistrement."
+  },
+  {
+    "id": "19",
+    "category": "Embarquement",
+    "question": "Comment fonctionne le QR Code du billet ?",
+    "answer": "Votre QR Code contient toutes les informations de votre réservation de manière chiffrée. Le personnel de l'opérateur le scanne pour valider votre billet et vous permettre d'embarquer. Chaque QR Code est unique et ne peut être utilisé qu'une fois."
+  },
+  {
+    "id": "20",
+    "category": "Support",
+    "question": "Comment contacter le support CongoMuv ?",
+    "answer": "Vous pouvez nous contacter via : 1) Le formulaire de contact dans 'Support & FAQ' 2) Email : support@congomuv.com 3) Téléphone : +243 XXX XXX XXX (9h-18h, du lundi au samedi). Nous répondons généralement sous 24 heures."
+  }
+]

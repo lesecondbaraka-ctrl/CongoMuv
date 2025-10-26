@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .progress-bar {
+    @apply bg-emerald-500 h-3 rounded-full transition-all duration-500 ease-out;
+    background: linear-gradient(90deg, #059669 0%, #0d9488 100%);
+    box-shadow: 0 0 10px rgba(5, 150, 105, 0.5);
+  }
+
+  .bg-map-pattern {
+    background-color: #1a1a1a;
+    background-image: radial-gradient(#ffffff33 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
+    }
+  }
+
+  .animate-bounce {
+    animation: bounce 2s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+}
+
+@layer components {
+  .progress-bar {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-600 h-3 rounded-full transition-all duration-500;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

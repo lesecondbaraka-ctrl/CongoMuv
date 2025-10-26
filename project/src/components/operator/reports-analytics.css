@@ -1,0 +1,60 @@
+/* Custom styles for ReportsAnalytics component */
+.revenue-container {
+  position: relative;
+  height: 0.5rem;
+  background-color: #e2e8f0; /* slate-200 */
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.revenue-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #10b981, #0d9488); /* emerald-500 to teal-600 */
+  transition: transform 0.3s ease;
+}
+
+/* Appliquer la transformation d'échelle basée sur l'attribut data-revenue-scale */
+.revenue-bar[data-revenue-scale] {
+  transform: scaleX(attr(data-revenue-scale));
+}
+
+.occupancy-container {
+  position: relative;
+  height: 0.5rem;
+  width: 100%;
+  max-width: 6.25rem; /* 100px */
+  background-color: #e2e8f0; /* slate-200 */
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.occupancy-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 9999px;
+}
+
+/* Appliquer la largeur basée sur l'attribut data-occupancy-width */
+.occupancy-bar[data-occupancy-width] {
+  width: attr(data-occupancy-width %);
+}
+
+.occupancy-bar.high {
+  background-color: #10b981; /* emerald-500 */
+}
+
+.occupancy-bar.medium {
+  background-color: #f59e0b; /* amber-500 */
+}
+
+.occupancy-bar.low {
+  background-color: #ef4444; /* red-500 */
+}
