@@ -246,7 +246,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               required
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors ${
                 !validation.email.valid ? 'border-red-300' : 'border-slate-300'
               }`}
               placeholder="exemple@email.com"
@@ -268,7 +268,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 required
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
+                className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors ${
                   !validation.password.valid ? 'border-red-300' : 'border-slate-300'
                 }`}
                 placeholder="••••••••"
@@ -327,7 +327,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   required
                   value={formData.fullName}
                   onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors ${
                     !validation.fullName.valid ? 'border-red-300' : 'border-slate-300'
                   }`}
                   placeholder="Jean Mukendi"
@@ -347,7 +347,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                   required
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors ${
                     !validation.phone.valid ? 'border-red-300' : 'border-slate-300'
                   }`}
                   placeholder="+243 821 938 773"
@@ -368,7 +368,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     required
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors ${
+                    className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors ${
                       !validation.confirmPassword.valid ? 'border-red-300' : 'border-slate-300'
                     }`}
                     placeholder="••••••••"
@@ -395,7 +395,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <button
                 type="button"
                 onClick={() => setForgotPasswordMode(true)}
-                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                className="text-sm text-blue-700 hover:text-blue-800 font-medium"
               >
                 Mot de passe oublié ?
               </button>
@@ -405,7 +405,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-blue-700 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-blue-800 hover:to-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Chargement...' : mode === 'login' ? 'Se connecter' : "S'inscrire"}
           </button>
@@ -414,7 +414,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             <button
               type="button"
               onClick={() => handleModeSwitch(mode === 'login' ? 'register' : 'login')}
-              className="text-emerald-600 hover:text-emerald-700 font-medium"
+              className="text-blue-700 hover:text-blue-800 font-medium"
             >
               {mode === 'login'
                 ? "Pas de compte ? S'inscrire"

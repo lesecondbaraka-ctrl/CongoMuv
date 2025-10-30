@@ -14,6 +14,7 @@ if (!process.env.DB_SKIP_INIT) process.env.DB_SKIP_INIT = 'true';
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const devAuthRoutes = require('./routes/dev-auth');
 const usersRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const bookingsRoutes = require('./routes/bookings');
@@ -73,6 +74,8 @@ const allowedOrigins = [
   env.FRONTEND_URL,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
   'http://localhost:5175',
   'http://127.0.0.1:5175',
   'http://localhost:3000',
@@ -82,12 +85,20 @@ const allowedOrigins = [
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); // allow non-browser clients or same-origin
+    
+    // En développement, autoriser tous les localhost et 127.0.0.1
+    if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+      if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+        return callback(null, true);
+      }
+    }
+    
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`CORS: Origin ${origin} not allowed`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['*', 'Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
@@ -135,6 +146,11 @@ app.use('/', homeRoutes);
 
 // Routes API
 app.use('/api/auth', authRoutes);
+// Route de développement (connexion rapide SANS OTP)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/dev-auth', devAuthRoutes);
+  console.log('\n⚠️  Mode développement: /api/dev-auth/quick-login activé');
+}
 app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/bookings', bookingsRoutes);

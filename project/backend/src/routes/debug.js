@@ -5,7 +5,7 @@ const router = express.Router();
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Test endpoint pour vérifier la connexion Supabase
+// Test endpoint pour vérifier la configuration et connexion Supabase
 router.get('/test-supabase', async (req, res) => {
   try {
     const results = {
@@ -14,9 +14,9 @@ router.get('/test-supabase', async (req, res) => {
       tests: {}
     };
 
-    // Test 1: Connexion à l'API REST
+    // Test 1 : Connexion à l'API REST Supabase
     try {
-      const response = await axios.get(`${SUPABASE_URL}/rest/v1/`, {
+      await axios.get(`${SUPABASE_URL}/rest/v1/`, {
         headers: {
           apikey: SUPABASE_SERVICE_ROLE_KEY,
           Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
@@ -27,7 +27,7 @@ router.get('/test-supabase', async (req, res) => {
       results.tests.rest_api = `❌ Erreur: ${error.message}`;
     }
 
-    // Test 2: Vérifier la table profiles
+    // Test 2 : Accès à la table profiles
     try {
       const response = await axios.get(`${SUPABASE_URL}/rest/v1/profiles`, {
         headers: {
@@ -41,9 +41,9 @@ router.get('/test-supabase', async (req, res) => {
       results.tests.profiles_table = `❌ Erreur: ${error.response?.data?.message || error.message}`;
     }
 
-    // Test 3: Vérifier l'API Auth
+    // Test 3 : Vérification de l'API Auth Supabase
     try {
-      const response = await axios.get(`${SUPABASE_URL}/auth/v1/health`, {
+      await axios.get(`${SUPABASE_URL}/auth/v1/health`, {
         headers: {
           apikey: SUPABASE_SERVICE_ROLE_KEY
         }
@@ -62,7 +62,7 @@ router.get('/test-supabase', async (req, res) => {
   }
 });
 
-// Test de création d'utilisateur (sans vraiment créer)
+// Test de création d'utilisateur sans exécution réelle (mode test)
 router.post('/test-signup', async (req, res) => {
   const { email, password, full_name, phone } = req.body;
 
@@ -78,14 +78,14 @@ router.post('/test-signup', async (req, res) => {
       },
       params: { select: 'email', email: `eq.${email}`, limit: 1 }
     });
-    
+
     if (Array.isArray(existing.data) && existing.data.length) {
       steps[0].status = '❌ Email déjà utilisé';
       return res.json({ steps, result: 'Email déjà utilisé' });
     }
     steps[0].status = '✅ Email disponible';
 
-    // Étape 2: Simuler création auth user
+    // Étape 2: Simulation de création utilisateur Auth
     steps.push({ 
       step: 2, 
       action: 'Création utilisateur auth', 
@@ -98,7 +98,7 @@ router.post('/test-signup', async (req, res) => {
       }
     });
 
-    // Étape 3: Simuler création profil
+    // Étape 3: Simulation de création profil
     steps.push({ 
       step: 3, 
       action: 'Création profil', 

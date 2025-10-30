@@ -153,6 +153,7 @@ export function VehicleTracking() {
                     vehicle.status === 'arrived' ? 'arrived' : ''
                   }`}
                   style={{
+                    // Styles dynamiques nécessaires pour le positionnement en temps réel
                     '--marker-left': `${left}%`,
                     '--marker-top': `${top}%`,
                     '--marker-zindex': isSelected ? '20' : '10',

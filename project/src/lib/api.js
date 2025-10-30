@@ -134,7 +134,7 @@ export const bookingApi = {
 export const routeApi = {
   createRoute: async (routeData) => {
     try {
-      const response = await api.post('/routes', routeData);
+      const response = await api.post('/admin-crud/routes', routeData);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -142,7 +142,7 @@ export const routeApi = {
   },
   getRoutes: async (filters = {}) => {
     try {
-      const response = await api.get('/routes', { params: filters });
+      const response = await api.get('/admin-crud/routes', { params: filters });
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -150,15 +150,18 @@ export const routeApi = {
   },
   getRouteById: async (id) => {
     try {
-      const response = await api.get(`/routes/${id}`);
-      return response.data;
+      // Backend ne fournit pas /admin-crud/routes/:id -> récupérer la liste et filtrer côté client
+      const response = await api.get('/admin-crud/routes', { params: { id } });
+      const items = response.data?.items || response.data?.routes || response.data || [];
+      const found = Array.isArray(items) ? items.find((r) => String(r.id) === String(id)) : null;
+      return found || null;
     } catch (error) {
       return handleApiError(error);
     }
   },
   updateRoute: async (id, updates) => {
     try {
-      const response = await api.put(`/routes/${id}`, updates);
+      const response = await api.put(`/admin-crud/routes/${id}`, updates);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -166,7 +169,7 @@ export const routeApi = {
   },
   deleteRoute: async (id) => {
     try {
-      const response = await api.delete(`/routes/${id}`);
+      const response = await api.delete(`/admin-crud/routes/${id}`);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -174,8 +177,9 @@ export const routeApi = {
   },
   getRouteSchedule: async (id) => {
     try {
-      const response = await api.get(`/routes/${id}/schedule`);
-      return response.data;
+      // Pas d'endpoint planning dédié côté backend -> retourner un format sûr
+      const route = await routeApi.getRouteById(id);
+      return { routeId: id, schedule: [], route };
     } catch (error) {
       return handleApiError(error);
     }
@@ -246,7 +250,8 @@ export const vehicleApi = {
   },
   getVehicles: async (filters = {}) => {
     try {
-      const response = await api.get('/vehicles', { params: filters });
+      // Utiliser l'endpoint existant pour véhicules actifs côté opérateur
+      const response = await api.get('/operator/vehicles/active', { params: filters });
       return response.data;
     } catch (error) {
       return handleApiError(error);

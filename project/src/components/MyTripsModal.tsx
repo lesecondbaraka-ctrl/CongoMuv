@@ -10,7 +10,7 @@ const Users = ({ className }: { className?: string }) => <Icon className={classN
 const Clock = ({ className }: { className?: string }) => <Icon className={className}>⏱</Icon>;
 import { Booking } from '../types';
 import { DigitalTicketModal } from './DigitalTicketModal';
-import { TrackingMapModal } from './TrackingMapModal';
+import { TripTrackingModal } from './TripTrackingModal';
 
 interface MyTripsModalProps {
   isOpen: boolean;
@@ -31,48 +31,126 @@ export function MyTripsModal({ isOpen, onClose }: MyTripsModalProps) {
 
   const loadBookings = async () => {
     try {
-      const token = localStorage.getItem('app_jwt');
-      if (!token) throw new Error('Non authentifié');
-      const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002';
-      const resp = await fetch(`${API_BASE}/api/bookings/me`, { headers: { Authorization: `Bearer ${token}` } });
-      const json = await resp.json();
-      if (!resp.ok) throw new Error(json?.error || 'Erreur chargement réservations');
+      // Charger les réservations depuis localStorage
+      const localBookings = JSON.parse(localStorage.getItem('demo_bookings') || '[]');
+      
+      // Si pas de réservations locales, utiliser des données de démonstration par défaut
+      if (localBookings.length === 0) {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        const lastWeek = new Date(today);
+        lastWeek.setDate(lastWeek.getDate() - 7);
 
-      const rows = (json.items || []) as any[];
-      const mapped: Booking[] = rows.map((r: any) => ({
-        id: r.id,
-        booking_reference: r.booking_reference || r.id,
-        number_of_passengers: r.passenger_count ?? r.number_of_passengers ?? 1,
-        total_amount: Number(r.total_price ?? r.total_amount ?? 0),
-        status: r.status || 'pending',
-        trip: r.trip ? {
-          id: r.trip.id,
-          route_id: r.trip.route?.id ?? 0,
-          departure_time: r.trip.departure_time,
-          arrival_time: r.trip.arrival_time ?? r.trip.departure_time,
-          vehicle_number: '',
-          total_seats: 0,
-          available_seats: 0,
-          status: 'scheduled',
-          route: r.trip.route ? {
-            id: r.trip.route.id ?? 0,
-            operator_id: r.trip.route.operator_id ?? 0,
-            transport_type_id: 0,
-            departure_city: r.trip.route.departure_city ?? '',
-            arrival_city: r.trip.route.arrival_city ?? '',
-            distance_km: 0,
-            estimated_duration_minutes: 0,
-            base_price: 0,
-            is_active: true,
-            operator: r.trip.route.operator ? { id: 0, name: r.trip.route.operator.name, type: '', is_active: true } as any : undefined,
-            transport_type: undefined,
-          } as any : null,
-        } : null,
-      }));
-      setBookings(mapped);
+        const demoBookings: Booking[] = [
+          {
+            id: 'booking-demo-1',
+            booking_reference: 'CM-2024-001',
+            number_of_passengers: 2,
+            total_amount: 300000,
+            status: 'confirmed',
+            trip: {
+              id: 1,
+              route_id: 1,
+              departure_time: tomorrow.setHours(8, 0, 0, 0).toString(),
+              arrival_time: new Date(tomorrow.getTime() + 6*60*60*1000).toString(),
+              vehicle_number: 'TC-001',
+              total_seats: 50,
+              available_seats: 43,
+              status: 'scheduled',
+              route: {
+                id: 1,
+                operator_id: 1,
+                transport_type_id: 1,
+                departure_city: 'Kinshasa',
+                arrival_city: 'Lubumbashi',
+                distance_km: 1800,
+                estimated_duration_minutes: 360,
+                base_price: 150000,
+                is_active: true,
+                operator: { id: 1, name: 'TransCongo Express', type: 'transco', is_active: true }
+              }
+            }
+          },
+          {
+            id: 'booking-demo-2',
+            booking_reference: 'CM-2024-002',
+            number_of_passengers: 1,
+            total_amount: 35000,
+            status: 'confirmed',
+            trip: {
+              id: 2,
+              route_id: 2,
+              departure_time: nextWeek.setHours(10, 30, 0, 0).toString(),
+              arrival_time: new Date(nextWeek.getTime() + 5*60*60*1000).toString(),
+              vehicle_number: 'KT-205',
+              total_seats: 40,
+              available_seats: 28,
+              status: 'scheduled',
+              route: {
+                id: 2,
+                operator_id: 2,
+                transport_type_id: 2,
+                departure_city: 'Kinshasa',
+                arrival_city: 'Matadi',
+                distance_km: 350,
+                estimated_duration_minutes: 300,
+                base_price: 35000,
+                is_active: true,
+                operator: { id: 2, name: 'Kinshasa Transport', type: 'transco', is_active: true }
+              }
+            }
+          }
+        ];
+
+        // Simuler un délai de chargement
+        setTimeout(() => {
+          setBookings(demoBookings);
+          setLoading(false);
+        }, 800);
+      } else {
+        // Convertir les réservations locales au format attendu
+        const convertedBookings: Booking[] = localBookings.map((booking: any) => ({
+          id: booking.id,
+          booking_reference: booking.reference,
+          number_of_passengers: booking.number_of_passengers,
+          total_amount: booking.total_amount,
+          status: booking.status,
+          trip: {
+            id: booking.trip_id,
+            route_id: booking.trip_id,
+            departure_time: booking.trip.departure_time,
+            arrival_time: booking.trip.arrival_time,
+            vehicle_number: booking.trip.vehicle_number,
+            total_seats: 50,
+            available_seats: 45,
+            status: 'scheduled',
+            route: {
+              id: booking.trip_id,
+              operator_id: 'op-1',
+              transport_type_id: 1,
+              departure_city: booking.trip.departure_city,
+              arrival_city: booking.trip.arrival_city,
+              distance_km: 1000,
+              estimated_duration_minutes: 360,
+              base_price: booking.total_amount / booking.number_of_passengers,
+              is_active: true,
+              operator: { id: 1, name: booking.trip.operator_name || 'CongoMuv', type: 'transco', is_active: true }
+            }
+          }
+        }));
+
+        // Simuler un délai de chargement
+        setTimeout(() => {
+          setBookings(convertedBookings);
+          setLoading(false);
+        }, 500);
+      }
+      
     } catch (err) {
       console.error('Error loading bookings:', err);
-    } finally {
       setLoading(false);
     }
   };
@@ -235,7 +313,7 @@ export function MyTripsModal({ isOpen, onClose }: MyTripsModalProps) {
       )}
 
       {showTrackingModal && selectedBookingId && (
-        <TrackingMapModal
+        <TripTrackingModal
           bookingId={selectedBookingId}
           onClose={() => {
             setShowTrackingModal(false);

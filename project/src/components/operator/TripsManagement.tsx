@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, X, Calendar, MapPin, Clock, Users } from 'lucide-react';
+import TripForm from '../trips/TripForm';
 
 interface Trip {
   id: string;
@@ -28,35 +29,21 @@ export function TripsManagement() {
   const loadTrips = async () => {
     setLoading(true);
     try {
-      // TODO: Appel API
-      // const response = await fetch('http://localhost:3002/api/operator/trips');
-      // const data = await response.json();
-      
-      // Données simulées
-      setTrips([
-        {
-          id: '1',
-          route: { departure_city: 'Kinshasa', arrival_city: 'Lubumbashi' },
-          departure_time: '2025-01-28T08:00:00',
-          arrival_time: '2025-01-29T18:00:00',
-          vehicle_number: 'TRAIN-001',
-          total_seats: 200,
-          available_seats: 45,
-          status: 'scheduled'
+      const token = localStorage.getItem('token') || localStorage.getItem('app_jwt');
+      const resp = await fetch('http://localhost:3002/api/operator/trips', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        {
-          id: '2',
-          route: { departure_city: 'Matadi', arrival_city: 'Kinshasa' },
-          departure_time: '2025-01-28T10:00:00',
-          arrival_time: '2025-01-28T14:00:00',
-          vehicle_number: 'BUS-012',
-          total_seats: 50,
-          available_seats: 12,
-          status: 'scheduled'
-        }
-      ]);
+      });
+      if (!resp.ok) throw new Error('failed');
+      const json = await resp.json();
+      const items = Array.isArray(json?.data) ? json.data : [];
+      setTrips(items as any);
     } catch (error) {
       console.error('Erreur chargement trajets:', error);
+      // fallback doux si API indisponible
+      setTrips([]);
     } finally {
       setLoading(false);
     }
@@ -71,7 +58,14 @@ export function TripsManagement() {
     if (!confirm('Voulez-vous vraiment supprimer ce trajet ?')) return;
     
     try {
-      // TODO: Appel API DELETE
+      const token = localStorage.getItem('token') || localStorage.getItem('app_jwt');
+      await fetch(`http://localhost:3002/api/operator/trips/${tripId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       setTrips(trips.filter(t => t.id !== tripId));
     } catch (error) {
       console.error('Erreur suppression:', error);
@@ -207,7 +201,7 @@ export function TripsManagement() {
         </div>
       )}
 
-      {/* Modal (Placeholder) */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -225,7 +219,63 @@ export function TripsManagement() {
               </button>
             </div>
             <div className="p-6">
-              <p className="text-slate-600">Formulaire de création/modification à implémenter</p>
+              <TripForm
+                initialData={editingTrip ? {
+                  routeId: String((editingTrip as any).route_id || ''),
+                  vehicleId: String((editingTrip as any).vehicle_number || ''),
+                  departureDate: new Date(editingTrip.departure_time),
+                  departureTime: new Date(editingTrip.departure_time).toISOString().slice(11,16),
+                  arrivalDate: new Date(editingTrip.arrival_time),
+                  arrivalTime: new Date(editingTrip.arrival_time).toISOString().slice(11,16),
+                  price: (editingTrip as any).price || '',
+                  availableSeats: editingTrip.total_seats || '',
+                  status: editingTrip.status || 'scheduled',
+                  notes: (editingTrip as any).notes || ''
+                } : {}}
+                operators={[]}
+                vehicles={[]}
+                onSubmit={async (data: any) => {
+                  const token = localStorage.getItem('token') || localStorage.getItem('app_jwt');
+                  const headers: any = {
+                    'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  };
+                  try {
+                    if (editingTrip) {
+                      const resp = await fetch(`http://localhost:3002/api/operator/trips/${editingTrip.id}`, {
+                        method: 'PUT',
+                        headers,
+                        body: JSON.stringify({
+                          departure_datetime: data.departureDateTime,
+                          arrival_datetime: data.arrivalDateTime,
+                          vehicle_number: String(data.vehicleId || ''),
+                          total_seats: Number(data.availableSeats || 0),
+                          status: data.status,
+                        }),
+                      });
+                      if (!resp.ok) throw new Error('update_failed');
+                    } else {
+                      const resp = await fetch('http://localhost:3002/api/operator/trips', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                          route_id: String(data.routeId || ''),
+                          departure_datetime: data.departureDateTime,
+                          arrival_datetime: data.arrivalDateTime,
+                          vehicle_number: String(data.vehicleId || ''),
+                          total_seats: Number(data.availableSeats || 0),
+                        }),
+                      });
+                      if (!resp.ok) throw new Error('create_failed');
+                    }
+                    setShowModal(false);
+                    setEditingTrip(null);
+                    await loadTrips();
+                  } catch (e) {
+                    console.error('Erreur enregistrement trajet:', e);
+                  }
+                }}
+              />
             </div>
           </div>
         </div>

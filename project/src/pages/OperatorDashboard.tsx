@@ -104,7 +104,7 @@ export function OperatorDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-br from-emerald-600 to-teal-600 p-2.5 rounded-xl">
+              <div className="bg-gradient-to-br from-blue-700 to-blue-600 p-2.5 rounded-xl">
                 <span className="text-2xl">📊</span>
               </div>
               <div>
@@ -133,7 +133,7 @@ export function OperatorDashboard() {
               onClick={() => setActiveTab('dashboard')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
                 activeTab === 'dashboard'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-700 text-white'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -144,7 +144,7 @@ export function OperatorDashboard() {
               onClick={() => setActiveTab('trips')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
                 activeTab === 'trips'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-700 text-white'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -155,7 +155,7 @@ export function OperatorDashboard() {
               onClick={() => setActiveTab('bookings')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
                 activeTab === 'bookings'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-700 text-white'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -166,7 +166,7 @@ export function OperatorDashboard() {
               onClick={() => setActiveTab('tracking')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
                 activeTab === 'tracking'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-700 text-white'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -177,7 +177,7 @@ export function OperatorDashboard() {
               onClick={() => setActiveTab('reports')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
                 activeTab === 'reports'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-700 text-white'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -188,7 +188,7 @@ export function OperatorDashboard() {
               onClick={() => setActiveTab('drivers')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
                 activeTab === 'drivers'
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-blue-700 text-white'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -243,10 +243,10 @@ export function OperatorDashboard() {
               {/* Active Trips */}
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="bg-emerald-100 p-3 rounded-lg">
+                  <div className="bg-blue-100 p-3 rounded-lg">
                     <span className="text-2xl">📈</span>
                   </div>
-                  <span className="text-sm font-medium text-emerald-600">Actifs</span>
+                  <span className="text-sm font-medium text-blue-700">Actifs</span>
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900">{stats.activeTrips}</h3>
                 <p className="text-sm text-slate-600 mt-1">Trajets en cours</p>

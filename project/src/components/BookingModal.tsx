@@ -135,7 +135,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
                 </h3>
                 <button
                   onClick={addPassenger}
-                  className="flex items-center space-x-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition"
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Ajouter</span>
@@ -169,7 +169,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
                         required
                         value={passenger.fullName}
                         onChange={(e) => updatePassenger(index, 'fullName', e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                         placeholder="Jean Mukendi"
                       />
                     </div>
@@ -184,13 +184,13 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
                         required
                         value={passenger.age}
                         onChange={(e) => updatePassenger(index, 'age', e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                         placeholder="25"
                         min="0"
                         max="120"
                       />
                       {parseInt(passenger.age) < 5 && passenger.age !== '' && (
-                        <p className="text-xs text-emerald-600 mt-1">
+                        <p className="text-xs text-blue-700 mt-1">
                           Réduction 50% appliquée
                         </p>
                       )}
@@ -205,7 +205,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
                         type="tel"
                         value={passenger.phone}
                         onChange={(e) => updatePassenger(index, 'phone', e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                         placeholder="+243 821 938 773"
                       />
                     </div>
@@ -218,7 +218,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
                         type="text"
                         value={passenger.idCard}
                         onChange={(e) => updatePassenger(index, 'idCard', e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                         placeholder="Numéro d'identité"
                       />
                     </div>
@@ -229,7 +229,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
               <div className="bg-slate-50 rounded-xl p-6">
                 <div className="flex items-center justify-between text-lg">
                   <span className="font-semibold text-slate-900">Total</span>
-                  <span className="text-2xl font-bold text-emerald-600">
+                  <span className="text-2xl font-bold text-blue-700">
                     {calculateTotal().toLocaleString('fr-FR')} FC
                   </span>
                 </div>
@@ -240,7 +240,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
 
               <button
                 onClick={() => setStep('payment')}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg"
+                className="w-full bg-gradient-to-r from-blue-700 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-blue-800 hover:to-blue-700 transition-all shadow-lg"
               >
                 Continuer vers le paiement
               </button>
@@ -259,7 +259,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
                     onClick={() => setPaymentMethod(method)}
                     className={`p-4 border-2 rounded-xl text-left transition ${
                       paymentMethod === method
-                        ? 'border-emerald-500 bg-emerald-50'
+                        ? 'border-blue-600 bg-blue-50'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -279,7 +279,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
                     required
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                     placeholder="+243 821 938 773"
                   />
                 </div>
@@ -288,7 +288,7 @@ export function BookingModal({ isOpen, onClose, trip, onSuccess }: BookingModalP
               <div className="bg-slate-50 rounded-xl p-6">
                 <div className="flex items-center justify-between text-lg mb-4">
                   <span className="font-semibold text-slate-900">Montant à payer</span>
-                  <span className="text-2xl font-bold text-emerald-600">
+                  <span className="text-2xl font-bold text-blue-700">
                     {calculateTotal().toLocaleString('fr-FR')} FC
                   </span>
                 </div>

@@ -1,0 +1,224 @@
+import { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
+import { useTrips } from '../hooks/useTrips';
+import { useOperators } from '../hooks/useOperators';
+import { useRoutes } from '../hooks/useRoutes';
+
+type UserRole = 'ADMIN' | 'SUPER_ADMIN' | 'OPERATOR';
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  phone: string;
+  created_at: string;
+}
+
+interface Trip {
+  id: string;
+  route_id: string;
+  departure_datetime: string;
+  vehicle_number: string;
+  price: number;
+  available_seats: number;
+  status: string;
+  total_seats: number;
+}
+
+export default function AdminDashboard() {
+  // UI State
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'routes' | 'trips' | 'operators'>('dashboard');
+  const [showTripModal, setShowTripModal] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+
+  // Custom hooks for data management
+  const { error: tripsError, createTrip } = useTrips();
+  const { deleteOperator } = useOperators();
+  const { deleteRoute } = useRoutes();
+
+  // Show toast message
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // Check if user has a valid token
+  const hasValidToken = (): boolean => {
+    const token = localStorage.getItem('app_jwt') || localStorage.getItem('token');
+    return !!(token && token !== 'null' && token !== 'undefined');
+  };
+
+  // Handle route deletion
+  const handleDeleteRoute = async (id: string) => {
+    if (!confirm('Supprimer ce trajet ?')) return;
+    try {
+      await deleteRoute(id);
+      showToast('Trajet supprimé avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur suppression trajet:', error);
+      showToast('Erreur lors de la suppression du trajet', 'error');
+    }
+  };
+
+  // Handle operator deletion
+  const handleDeleteOperator = async (id: string) => {
+    if (!confirm("Supprimer cet opérateur ?")) return;
+    try {
+      await deleteOperator(id);
+      showToast('Opérateur supprimé avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur suppression opérateur:', error);
+      showToast('Erreur lors de la suppression de l\'opérateur', 'error');
+    }
+  };
+
+  // Handle trip creation
+  const handleCreateTrip = async (tripData: Omit<Trip, 'id' | 'status' | 'total_seats'>) => {
+    try {
+      const newTrip = await createTrip({
+        ...tripData,
+        status: 'scheduled',
+        total_seats: tripData.available_seats
+      });
+      setTrips(prev => [...prev, newTrip]);
+      setShowTripModal(false);
+      showToast('Voyage créé avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur création voyage:', error);
+      showToast('Erreur lors de la création du voyage', 'error');
+    }
+  };
+
+  // Handle errors from hooks
+  useEffect(() => {
+    if (tripsError) {
+      showToast(`Erreur voyages: ${tripsError}`, 'error');
+    }
+  }, [tripsError]);
+
+  // Load current user on mount
+  useEffect(() => {
+    const loadCurrentUser = () => {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          setCurrentUser(user);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+        }
+      }
+    };
+    
+    loadCurrentUser();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+          {currentUser && (
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Connecté en tant que <span className="font-medium">{currentUser.full_name}</span>
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {currentUser.role}
+              </span>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {/* Navigation Tabs */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            {['dashboard', 'routes', 'trips', 'operators'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`${
+                  activeTab === tab
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Content based on active tab */}
+        <div className="bg-white shadow rounded-lg p-6">
+          {activeTab === 'dashboard' && (
+            <div>
+              <h2 className="text-lg font-medium text-gray-900">Tableau de bord</h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Bienvenue sur le tableau d'administration de CongoMuv.
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'trips' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-medium text-gray-900">Voyages</h2>
+                <button
+                  onClick={() => setShowTripModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Nouveau voyage
+                </button>
+              </div>
+              {/* Trips list would go here */}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div
+            className={`${
+              toast.type === 'success' ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'
+            } border-l-4 p-4 rounded shadow-lg`}
+          >
+            <div className="flex">
+              <div className="flex-shrink-0">
+                {toast.type === 'success' ? (
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-900">{toast.message}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

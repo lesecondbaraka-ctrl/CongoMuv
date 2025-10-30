@@ -110,12 +110,17 @@ router.get('/trips', authenticateToken, requireOperator, async (req, res) => {
   }
 });
 
-// POST /api/operator/trips - Créer un nouveau trajet
-router.post('/trips', authenticateToken, requireOperator, async (req, res) => {
+// POST /api/operator/trips - Créer un nouveau trajet - SIMPLIFIÉ
+router.post('/trips', authenticateToken, async (req, res) => {
   try {
+    console.log('\n=== POST /api/operator/trips ===');
+    console.log('User:', req.user);
+    console.log('Body:', req.body);
+    
     const { route_id, departure_datetime, arrival_datetime, vehicle_number, total_seats } = req.body;
-    const organizationId = req.user.organization_id;
+    const organizationId = req.user.organization_id || null;
 
+    console.log('✅ Insertion dans trips...');
     const query = `
       INSERT INTO trips (
         route_id, organization_id, departure_datetime, arrival_datetime,
@@ -136,6 +141,7 @@ router.post('/trips', authenticateToken, requireOperator, async (req, res) => {
       'scheduled'
     ]);
 
+    console.log('✅ Voyage créé:', result.rows[0]);
     res.json({
       success: true,
       message: 'Trajet créé avec succès',

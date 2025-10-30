@@ -1,70 +1,55 @@
 const express = require('express');
 const router = express.Router();
 const { verifyJWT } = require('../middleware/auth');
-const { roleRedirect } = require('../middleware/roleRedirect');
-const dashboardController = require('../controllers/dashboardController');
+const { requireRole } = require('../middleware/roles');
 
-// Récupérer le tableau de bord de l'utilisateur connecté
-router.get('/me', verifyJWT, dashboardController.getDashboard);
+// Exemple de contrôleur dashboard simulé
+const dashboardController = {
+  getDashboard: (req, res) => {
+    const { role, organization_id } = req.user;
+    const normalizedRole = String(role || '').toLowerCase();
 
-// Vérifier l'accès à une route spécifique
-router.get('/check-access', verifyJWT, dashboardController.checkRouteAccess);
+    let response = {};
 
-// Redirection vers le tableau de bord approprié
-router.get('/', verifyJWT, (req, res) => {
-  const { role } = req.user || {};
-  
-  // Rediriger vers le tableau de bord par défaut selon le rôle
-  switch (role) {
-    case 'super_admin':
-      return res.redirect('/admin/super');
-    case 'admin':
-      return res.redirect('/admin/dashboard');
-    case 'operator':
-      return res.redirect('/operator/dashboard');
-    case 'user':
-    default:
-      return res.redirect('/passager/dashboard');
+    if (normalizedRole === 'superadmin' || normalizedRole === 'super_admin') {
+      // Superadmin voit tout
+      response = {
+        message: "Tableau de bord Super Admin",
+        modules: ['users', 'operators', 'debug', 'global_reports', 'settings']
+      };
+    } else if (normalizedRole === 'admin') {
+      // Admin limité à son organisation
+      response = {
+        message: `Tableau de bord Admin pour organisation ${organization_id}`,
+        modules: ['users', 'operators', 'basic_reports']
+      };
+    } else {
+      // Autres rôles (operator, user, passager)
+      response = {
+        message: "Tableau de bord utilisateur",
+        modules: ['basic_reports']
+      };
+    }
+
+    res.json(response);
   }
-});
+};
 
-// Exemple de route protégée par rôle
-router.get('/admin/dashboard', 
-  verifyJWT, 
-  roleRedirect(['admin', 'super_admin']),
-  (req, res) => {
-    res.json({
-      success: true,
-      message: 'Bienvenue sur le tableau de bord administrateur',
-      user: req.user
-    });
-  }
+// Route dashboard accessible aux admins et superadmins
+router.get('/',
+  verifyJWT,
+  requireRole(['admin', 'super_admin']),
+  dashboardController.getDashboard
 );
 
-// Exemple de route pour les opérateurs
-router.get('/operator/dashboard',
+// Route spécifique superadmin uniquement (ex: debug avancé)
+router.get('/super',
   verifyJWT,
-  roleRedirect(['operator', 'admin', 'super_admin']),
-  (req, res) => {
-    res.json({
-      success: true,
-      message: 'Tableau de bord opérateur',
-      user: req.user
-    });
-  }
-);
-
-// Exemple de route pour les passagers
-router.get('/passager/dashboard',
-  verifyJWT,
-  roleRedirect(['user', 'admin', 'super_admin']),
-  (req, res) => {
-    res.json({
-      success: true,
-      message: 'Espace passager',
-      user: req.user
-    });
-  }
+  requireRole('super_admin'),
+  (req, res) => res.json({
+    message: "Accès réservé au Super Admin",
+    modules: ['users', 'operators', 'debug', 'global_reports', 'settings', 'logs']
+  })
 );
 
 module.exports = router;

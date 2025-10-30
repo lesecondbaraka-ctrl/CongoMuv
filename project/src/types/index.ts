@@ -55,9 +55,10 @@ export interface User {
   email: string;
   phone?: string;
   full_name: string;
-  role: 'user' | 'admin' | 'operator';
+  role: 'user' | 'admin' | 'operator' | 'superadmin' | 'SUPER_ADMIN';
   created_at: string;
   is_active?: boolean;
+  token?: string; // Ajouté pour JWT
 }
 
 export interface OperatorReview {

@@ -190,7 +190,11 @@ export function DriversManagement() {
       {/* Drivers List */}
       {activeTab === 'drivers' && (
         <div className="grid gap-4">
-          {drivers.map((driver) => (
+          {loading && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 text-center text-slate-600">Chargement...</div>
+          )}
+
+          {!loading && drivers.map((driver) => (
             <div key={driver.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">

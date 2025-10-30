@@ -119,40 +119,50 @@ export function PassengerBookingModal({ trip, onClose, onSuccess }: PassengerBoo
     setError('');
 
     try {
-      const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002';
+      // Mode démonstration - Stockage local
       const token = localStorage.getItem('app_jwt');
 
       if (!token) {
         throw new Error('Vous devez être connecté pour effectuer une réservation');
       }
 
-      // Créer la réservation
-      const bookingResponse = await fetch(`${API_BASE}/api/bookings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      // Simuler un délai de traitement
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Créer la réservation en local
+      const bookingId = `BK-${Date.now()}`;
+      const bookingData = {
+        id: bookingId,
+        reference: `CM-2024-${String(Date.now()).slice(-3)}`,
+        trip_id: trip.id,
+        trip: {
+          departure_city: trip.route?.departure_city,
+          arrival_city: trip.route?.arrival_city,
+          departure_time: trip.departure_time,
+          arrival_time: trip.arrival_time,
+          operator_name: trip.route?.operator?.name,
+          vehicle_number: trip.vehicle_number
         },
-        body: JSON.stringify({
-          trip_id: trip.id,
-          number_of_passengers: passengers.length,
-          total_amount: pricing?.totalAmount || 0,
-          passenger_details: passengers.map(p => ({
-            full_name: p.fullName,
-            age: p.age,
-            is_child: p.isChild,
-            discount_applied: p.discountApplied
-          }))
-        })
-      });
+        number_of_passengers: passengers.length,
+        total_amount: pricing?.totalAmount || 0,
+        status: 'confirmed',
+        payment_status: 'pending',
+        passenger_details: passengers.map(p => ({
+          full_name: p.fullName,
+          age: p.age,
+          is_child: p.isChild,
+          discount_applied: p.discountApplied
+        })),
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString() // 45 jours
+      };
 
-      if (!bookingResponse.ok) {
-        const errorData = await bookingResponse.json();
-        throw new Error(errorData.error || 'Erreur lors de la réservation');
-      }
+      // Stocker dans localStorage
+      const existingBookings = JSON.parse(localStorage.getItem('demo_bookings') || '[]');
+      existingBookings.push(bookingData);
+      localStorage.setItem('demo_bookings', JSON.stringify(existingBookings));
 
-      const bookingData = await bookingResponse.json();
-      const bookingId = bookingData.booking?.id || bookingData.id;
+      console.log('Mode démonstration - Réservation créée:', bookingData);
 
       // Passer au paiement
       onSuccess(bookingId, pricing?.totalAmount || 0);

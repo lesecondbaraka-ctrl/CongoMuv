@@ -24,23 +24,24 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
-      // Récupérer le rôle depuis le localStorage s'il existe
-      const storedRole = localStorage.getItem('app_role') || 'user';
-      const userRole = storedRole.toLowerCase().trim();
-      
-      // Récupérer les données utilisateur depuis l'API
+      // Récupérer les données utilisateur depuis l'API (y compris le rôle de la base de données)
       let userData = {};
       try {
         userData = await authApi.getProfile();
       } catch (error) {
         console.error('Erreur lors du chargement du profil:', error);
-        // Continuer avec les données stockées en cas d'erreur
+        // En cas d'erreur, utiliser le rôle stocké comme fallback
+        const storedRole = localStorage.getItem('app_role') || 'user';
+        userData = { role: storedRole };
       }
       
-      // Créer un utilisateur normalisé
+      // Utiliser le rôle de la base de données en priorité
+      const userRole = (userData.role || localStorage.getItem('app_role') || 'user').toLowerCase().trim();
+      
+      // Créer un utilisateur normalisé avec le rôle de la base de données
       const normalizedUser = {
         ...userData,
-        role: userRole,
+        role: userRole === 'user' ? 'passenger' : userRole,
         id: userData.id || 'temp-id',
         email: userData.email || localStorage.getItem('user_email') || ''
       };
@@ -116,11 +117,14 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.token) {
         localStorage.setItem('token', response.token);
         
-        // Normalisation du rôle
+        // Récupérer le rôle de la base de données depuis la réponse
         let userRole = response.user?.role || 'user';
         userRole = userRole.toLowerCase().trim();
         
-        // Mise à jour de l'utilisateur avec le rôle normalisé
+        // Stocker le rôle de la base de données dans localStorage pour cohérence
+        localStorage.setItem('app_role', userRole);
+        
+        // Mise à jour de l'utilisateur avec le rôle de la base de données
         const normalizedUser = {
           ...response.user,
           role: userRole === 'user' ? 'passenger' : userRole
@@ -145,6 +149,18 @@ export const AuthProvider = ({ children }) => {
           success: true, 
           redirect: dashboard.path,
           user: normalizedUser
+        };
+      }
+
+      // Si succès mais pas de token, alors OTP envoyé: rediriger vers la page 2FA
+      if (response.success && !response.token) {
+        try {
+          localStorage.setItem('user_email', String(email || '').trim().toLowerCase());
+        } catch {}
+        window.location.hash = '#/login';
+        return {
+          success: true,
+          redirect: '#/login'
         };
       }
 
@@ -175,6 +191,11 @@ export const AuthProvider = ({ children }) => {
 
       if (success && token) {
         localStorage.setItem('token', token);
+        
+        // Stocker le rôle de la base de données dans localStorage
+        if (userDataResponse.role) {
+          localStorage.setItem('app_role', userDataResponse.role.toLowerCase().trim());
+        }
         
         // Mettre à jour l'état avec les données utilisateur
         setUser(userDataResponse);

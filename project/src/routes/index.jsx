@@ -12,6 +12,7 @@ const DriverLayout = lazy(() => import('../layouts/DriverLayout'));
 // Pages publiques
 const HomePage = lazy(() => import('../pages/HomePage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
+const DevLogin = lazy(() => import('../pages/DevLogin'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('../pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('../pages/ResetPasswordPage'));
@@ -79,6 +80,7 @@ const AppRoutes = () => {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
+          <Route path="dev-login" element={<DevLogin />} />
           <Route path="register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />

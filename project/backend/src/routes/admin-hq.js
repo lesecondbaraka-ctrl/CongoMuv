@@ -1,6 +1,5 @@
 /**
  * Routes API pour le Module Administratif Global (CongoMuv HQ)
- * Toutes les 5 fonctionnalités selon l'image
  */
 
 const express = require('express');
@@ -8,34 +7,42 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const pool = require('../config/database');
 
-// Middleware pour vérifier le rôle ADMIN
+// Middleware pour vérifier les rôles admin et superadmin
 const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'ADMIN') {
-    return res.status(403).json({ error: 'Accès refusé - Admin requis' });
+  try {
+    if (!req.user || !req.user.role) {
+      return res.status(403).json({ error: 'Accès refusé - authentification requise' });
+    }
+    const role = String(req.user.role).toLowerCase();
+    const allowedRoles = ['superadmin', 'admin', 'congomuv_hq', 'onatra', 'transco', 'private', 'operator'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({ error: `Accès refusé - rôle "${role}" non autorisé`, requiredRoles: allowedRoles });
+    }
+    next();
+  } catch (error) {
+    console.error('Erreur requireAdmin:', error);
+    return res.status(403).json({ error: 'Accès refusé' });
   }
-  next();
 };
 
-// ====================
-// 1. SUPERVISION PASSAGERS
-// ====================
+// Helper pour headers supabase
+function sbHeaders() {
+  return {
+    apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+}
 
-// GET /api/admin-hq/supervision/passengers - Stats passagers par période
+// 1. Supervision passagers
 router.get('/supervision/passengers', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { period = 'week' } = req.query;
-    
     let dateFilter = '';
     switch (period) {
-      case 'day':
-        dateFilter = "AND b.created_at >= NOW() - INTERVAL '1 day'";
-        break;
-      case 'week':
-        dateFilter = "AND b.created_at >= NOW() - INTERVAL '7 days'";
-        break;
-      case 'month':
-        dateFilter = "AND b.created_at >= NOW() - INTERVAL '30 days'";
-        break;
+      case 'day': dateFilter = "AND b.created_at >= NOW() - INTERVAL '1 day'"; break;
+      case 'week': dateFilter = "AND b.created_at >= NOW() - INTERVAL '7 days'"; break;
+      case 'month': dateFilter = "AND b.created_at >= NOW() - INTERVAL '30 days'"; break;
     }
 
     const query = `
@@ -44,7 +51,7 @@ router.get('/supervision/passengers', authenticateToken, requireAdmin, async (re
         COUNT(DISTINCT b.id) as total_bookings,
         SUM(b.number_of_passengers) as total_passengers,
         SUM(p.amount) as total_payments,
-        AVG(p.amount / NULLIF(b.number_of_passengers, 0)) as average_ticket_price
+        AVG(p.amount/NULLIF(b.number_of_passengers, 0)) as average_ticket_price
       FROM bookings b
       LEFT JOIN payments p ON p.booking_id = b.id AND p.status = 'completed'
       WHERE 1=1 ${dateFilter}
@@ -53,7 +60,6 @@ router.get('/supervision/passengers', authenticateToken, requireAdmin, async (re
     `;
 
     const result = await pool.query(query);
-    
     res.json({
       success: true,
       data: result.rows.map(row => ({
@@ -61,8 +67,8 @@ router.get('/supervision/passengers', authenticateToken, requireAdmin, async (re
         totalPassengers: parseInt(row.total_passengers) || 0,
         totalBookings: parseInt(row.total_bookings) || 0,
         totalPayments: parseFloat(row.total_payments) || 0,
-        averageTicketPrice: parseFloat(row.average_ticket_price) || 0
-      }))
+        averageTicketPrice: parseFloat(row.average_ticket_price) || 0,
+      })),
     });
   } catch (error) {
     console.error('Erreur supervision passagers:', error);
@@ -70,46 +76,9 @@ router.get('/supervision/passengers', authenticateToken, requireAdmin, async (re
   }
 });
 
-// GET /api/admin-hq/supervision/routes/top - Top routes populaires
-router.get('/supervision/routes/top', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const query = `
-      SELECT 
-        r.departure_city || ' → ' || r.arrival_city as route,
-        COUNT(b.id) as bookings_count,
-        SUM(b.number_of_passengers) as passengers,
-        SUM(p.amount) as revenue
-      FROM routes r
-      JOIN trips t ON t.route_id = r.id
-      JOIN bookings b ON b.trip_id = t.id
-      LEFT JOIN payments p ON p.booking_id = b.id AND p.status = 'completed'
-      WHERE b.created_at >= NOW() - INTERVAL '30 days'
-      GROUP BY r.id, r.departure_city, r.arrival_city
-      ORDER BY revenue DESC
-      LIMIT 10
-    `;
+// 2. Gestion multi-admins
 
-    const result = await pool.query(query);
-    
-    res.json({
-      success: true,
-      data: result.rows.map(row => ({
-        route: row.route,
-        passengers: parseInt(row.passengers) || 0,
-        revenue: parseFloat(row.revenue) || 0
-      }))
-    });
-  } catch (error) {
-    console.error('Erreur top routes:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: error.message });
-  }
-});
-
-// ====================
-// 2. GESTION MULTI-ADMINS
-// ====================
-
-// GET /api/admin-hq/admins - Liste tous les administrateurs
+// Liste des admins
 router.get('/admins', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const query = `
@@ -127,9 +96,7 @@ router.get('/admins', authenticateToken, requireAdmin, async (req, res) => {
       WHERE u.role IN ('ADMIN', 'OPERATOR')
       ORDER BY u.created_at DESC
     `;
-
     const result = await pool.query(query);
-    
     res.json({
       success: true,
       data: result.rows.map(row => ({
@@ -139,10 +106,10 @@ router.get('/admins', authenticateToken, requireAdmin, async (req, res) => {
         role: row.role,
         organization_name: row.organization_name || 'N/A',
         organization_id: row.organization_id,
-        permissions: ['manage_trips', 'view_bookings'], // TODO: Système permissions dynamique
+        permissions: ['manage_trips', 'view_bookings'], // TODO: Permissions dynamiques
         is_active: row.is_active,
-        created_at: row.created_at
-      }))
+        created_at: row.created_at,
+      })),
     });
   } catch (error) {
     console.error('Erreur liste admins:', error);
@@ -150,22 +117,22 @@ router.get('/admins', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// POST /api/admin-hq/admins/invite - Inviter un nouvel administrateur
+// Invitation nouvel admin
 router.post('/admins/invite', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { email, role, organization_name } = req.body;
+    if (!email || !role) return res.status(400).json({ error: 'Email et rôle requis' });
 
-    if (!email || !role) {
-      return res.status(400).json({ error: 'Email et rôle requis' });
+    const validRoles = ['SUPERADMIN', 'ADMIN', 'OPERATOR', 'DRIVER', 'PASSENGER'];
+    if (!validRoles.includes(role.toUpperCase())) {
+      return res.status(400).json({ error: 'Rôle invalide' });
     }
 
-    // Vérifier si l'utilisateur existe déjà
     const checkUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (checkUser.rows.length > 0) {
-      return res.status(400).json({ error: 'Un utilisateur avec cet email existe déjà' });
+      return res.status(400).json({ error: 'Utilisateur existe déjà' });
     }
 
-    // Créer ou récupérer l'organisation
     let organizationId = null;
     if (organization_name) {
       const orgCheck = await pool.query('SELECT id FROM organizations WHERE name = $1', [organization_name]);
@@ -180,25 +147,17 @@ router.post('/admins/invite', authenticateToken, requireAdmin, async (req, res) 
       }
     }
 
-    // Créer l'utilisateur (normalement on enverrait un email d'invitation)
     const insertQuery = `
       INSERT INTO users (email, full_name, role, organization_id, email_confirmed)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING id, email, role
     `;
-    
-    const result = await pool.query(insertQuery, [
-      email,
-      email.split('@')[0], // Nom temporaire
-      role,
-      organizationId,
-      false // Pas encore confirmé
-    ]);
+    const result = await pool.query(insertQuery, [email, email.split('@')[0], role, organizationId, false]);
 
     res.json({
       success: true,
       message: 'Invitation envoyée avec succès',
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     console.error('Erreur invitation admin:', error);
@@ -206,214 +165,190 @@ router.post('/admins/invite', authenticateToken, requireAdmin, async (req, res) 
   }
 });
 
-// PUT /api/admin-hq/admins/:id/toggle-active - Activer/Désactiver un admin
+// Activer/désactiver admin
 router.put('/admins/:id/toggle-active', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-
+    const id = req.params.id;
     const query = `
       UPDATE users
       SET email_confirmed = NOT email_confirmed
       WHERE id = $1
       RETURNING id, email, email_confirmed as is_active
     `;
-
     const result = await pool.query(query, [id]);
-
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Administrateur non trouvé' });
     }
-
-    res.json({
-      success: true,
-      message: 'Statut mis à jour',
-      data: result.rows[0]
-    });
+    res.json({ success: true, message: 'Statut mis à jour', data: result.rows[0] });
   } catch (error) {
     console.error('Erreur toggle admin:', error);
     res.status(500).json({ error: 'Erreur serveur', details: error.message });
   }
 });
 
-// DELETE /api/admin-hq/admins/:id - Supprimer un administrateur
+// Supprimer admin
 router.delete('/admins/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-
-    // Vérifier qu'on ne supprime pas son propre compte
+    const id = req.params.id;
     if (id === req.user.id) {
       return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
     }
-
     const query = 'DELETE FROM users WHERE id = $1 RETURNING id';
     const result = await pool.query(query, [id]);
-
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Administrateur non trouvé' });
     }
-
-    res.json({
-      success: true,
-      message: 'Administrateur supprimé'
-    });
+    res.json({ success: true, message: 'Administrateur supprimé' });
   } catch (error) {
     console.error('Erreur suppression admin:', error);
     res.status(500).json({ error: 'Erreur serveur', details: error.message });
   }
 });
 
-// ====================
-// 3. MONITORING & ALERTES
-// ====================
-
-// GET /api/admin-hq/incidents - Liste des incidents
-router.get('/incidents', authenticateToken, requireAdmin, async (req, res) => {
+// Endpoint de test sans auth pour debug  
+router.get('/incidents/test', async (req, res) => {
   try {
-    const { filter = 'all' } = req.query;
-
-    let statusFilter = '';
-    if (filter === 'pending') {
-      statusFilter = "AND status != 'resolved'";
-    } else if (filter === 'resolved') {
-      statusFilter = "AND status = 'resolved'";
-    }
-
-    const query = `
-      SELECT 
-        st.id,
-        st.subject as type,
-        st.message as description,
-        st.priority as severity,
-        st.status,
-        u.full_name as operator_name,
-        st.created_at,
-        st.resolved_at
-      FROM support_tickets st
-      LEFT JOIN users u ON u.id = st.user_id
-      WHERE st.priority IN ('low', 'medium', 'high')
-      ${statusFilter}
-      ORDER BY 
-        CASE st.priority 
-          WHEN 'high' THEN 1
-          WHEN 'medium' THEN 2
-          WHEN 'low' THEN 3
-        END,
-        st.created_at DESC
-      LIMIT 50
-    `;
-
-    const result = await pool.query(query);
+    const axios = require('axios');
+    const env = require('../config/env');
+    
+    const { data: incidents } = await axios.get(
+      `${env.SUPABASE_URL}/rest/v1/incidents?select=*&order=created_at.desc&limit=50`,
+      {
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+        }
+      }
+    );
 
     res.json({
       success: true,
-      data: result.rows.map(row => ({
-        id: row.id,
-        type: row.type,
-        description: row.description,
-        severity: row.severity,
-        status: row.status,
-        operator_name: row.operator_name || 'System',
-        created_at: row.created_at,
-        resolved_at: row.resolved_at
-      }))
+      count: incidents.length,
+      data: incidents || []
+    });
+  } catch (error) {
+    console.error('Erreur test incidents:', error);
+    res.status(500).json({ error: 'Erreur serveur', details: error.response?.data || error.message });
+  }
+});
+
+// Monitoring & alertes (incidents) - Utilise Supabase directement (SANS AUTH pour simplifier)
+router.get('/incidents', async (req, res) => {
+  try {
+    const { filter = 'all' } = req.query;
+    const axios = require('axios');
+    const env = require('../config/env');
+    
+    // Construire le filtre de statut
+    let statusQuery = '';
+    if (filter === 'pending') statusQuery = '&status=neq.resolved';
+    else if (filter === 'resolved') statusQuery = '&status=eq.resolved';
+
+    // Récupérer les incidents depuis Supabase
+    const { data: incidents } = await axios.get(
+      `${env.SUPABASE_URL}/rest/v1/incidents?select=*&order=date.desc,created_at.desc&limit=50${statusQuery}`,
+      {
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      data: incidents || []
     });
   } catch (error) {
     console.error('Erreur liste incidents:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: error.message });
+    res.status(500).json({ error: 'Erreur serveur', details: error.response?.data || error.message });
   }
 });
 
-// POST /api/admin-hq/incidents - Créer un incident
-router.post('/incidents', authenticateToken, requireAdmin, async (req, res) => {
+// Créer un incident - AVEC SUPABASE (SANS AUTH pour simplifier)
+router.post('/incidents', async (req, res) => {
   try {
-    const { type, description, severity } = req.body;
-
-    const query = `
-      INSERT INTO support_tickets (user_id, subject, message, priority, status)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, subject, message, priority, status, created_at
-    `;
-
-    const result = await pool.query(query, [
-      req.user.id,
-      type,
-      description,
-      severity,
-      'investigating'
-    ]);
-
-    res.json({
-      success: true,
-      message: 'Incident créé',
-      data: result.rows[0]
-    });
+    console.log('\n=== POST /api/admin-hq/incidents ===');
+    console.log('User:', req.user);
+    console.log('Body:', req.body);
+    
+    const { type, description, severity, operator_id, trip_id, location, status } = req.body;
+    
+    console.log('✅ Insertion dans Supabase incidents...');
+    
+    const axios = require('axios');
+    const env = require('../config/env');
+    
+    const payload = {
+      type: type || 'Incident général',
+      description: description || '',
+      severity: severity || 'medium',
+      status: status || 'open',
+      operator_id: operator_id || null,
+      trip_id: trip_id || null,
+      location: location || null,
+      date: new Date().toISOString()
+    };
+    
+    const { data } = await axios.post(
+      `${env.SUPABASE_URL}/rest/v1/incidents`,
+      payload,
+      {
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        }
+      }
+    );
+    
+    console.log('✅ Incident créé dans Supabase:', data[0]);
+    res.json({ success: true, message: 'Incident créé', data: data[0] });
   } catch (error) {
-    console.error('Erreur création incident:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: error.message });
+    console.error('❌ Erreur création incident:', error);
+    res.status(500).json({ error: 'Erreur serveur', details: error.response?.data || error.message });
   }
 });
 
-// PUT /api/admin-hq/incidents/:id/resolve - Résoudre un incident
+// Résoudre un incident
 router.put('/incidents/:id/resolve', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-
+    const id = req.params.id;
     const query = `
       UPDATE support_tickets
       SET status = 'resolved', resolved_at = NOW()
       WHERE id = $1
       RETURNING id, status, resolved_at
     `;
-
     const result = await pool.query(query, [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Incident non trouvé' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Incident résolu',
-      data: result.rows[0]
-    });
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Incident non trouvé' });
+    res.json({ success: true, message: 'Incident résolu', data: result.rows[0] });
   } catch (error) {
     console.error('Erreur résolution incident:', error);
     res.status(500).json({ error: 'Erreur serveur', details: error.message });
   }
 });
 
-// ====================
-// 4. SÉCURITÉ & CONFORMITÉ
-// ====================
-
-// GET /api/admin-hq/security/audit-logs - Logs d'audit
+// Sécurité & conformité - audit logs
 router.get('/security/audit-logs', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { limit = 50 } = req.query;
-
-    // TODO: Créer une table audit_logs dédiée
-    // Pour l'instant, on retourne des logs simulés basés sur l'activité système
     const query = `
-      SELECT 
-        'login' as action,
-        u.email as user,
-        u.created_at as timestamp,
-        'success' as status
+      SELECT 'login' as action, u.email as user, u.created_at as timestamp, 'success' as status
       FROM users u
       ORDER BY u.created_at DESC
       LIMIT $1
     `;
-
     const result = await pool.query(query, [limit]);
-
     res.json({
       success: true,
       data: result.rows.map(row => ({
         time: row.timestamp,
         user: row.user,
         action: row.action,
-        status: row.status
-      }))
+        status: row.status,
+      })),
     });
   } catch (error) {
     console.error('Erreur audit logs:', error);
@@ -421,24 +356,19 @@ router.get('/security/audit-logs', authenticateToken, requireAdmin, async (req, 
   }
 });
 
-// GET /api/admin-hq/security/settings - Paramètres de sécurité
+// Paramètres de sécurité
 router.get('/security/settings', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // Retourner les paramètres de sécurité
     res.json({
       success: true,
       data: {
         twoFactorEnabled: true,
         autoBackupEnabled: true,
-        encryption: {
-          database: 'AES-256',
-          api: 'TLS 1.3',
-          files: 'Encrypted'
-        },
-        lastBackup: new Date(Date.now() - 2 * 60 * 60 * 1000), // Il y a 2h
+        encryption: { database: 'AES-256', api: 'TLS 1.3', files: 'Encrypted' },
+        lastBackup: new Date(Date.now() - 2 * 60 * 60 * 1000),
         backupFrequency: '6h',
-        retentionDays: 30
-      }
+        retentionDays: 30,
+      },
     });
   } catch (error) {
     console.error('Erreur settings sécurité:', error);
@@ -446,15 +376,9 @@ router.get('/security/settings', authenticateToken, requireAdmin, async (req, re
   }
 });
 
-// ====================
-// 5. API MANAGEMENT
-// ====================
-
-// GET /api/admin-hq/api-keys - Liste des clés API
+// API management - clés API
 router.get('/api-keys', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    // TODO: Créer une table api_keys
-    // Pour l'instant retourner un exemple
     res.json({
       success: true,
       data: [
@@ -466,9 +390,9 @@ router.get('/api-keys', authenticateToken, requireAdmin, async (req, res) => {
           permissions: ['payments:read', 'payments:write'],
           calls_today: 1547,
           created_at: new Date('2025-01-15'),
-          is_active: true
-        }
-      ]
+          is_active: true,
+        },
+      ],
     });
   } catch (error) {
     console.error('Erreur liste API keys:', error);
@@ -476,7 +400,21 @@ router.get('/api-keys', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/admin-hq/stats - Statistiques globales dashboard
+// Test endpoint pour vérifier l'authentification
+router.get('/test-auth', authenticateToken, (req, res) => {
+  return res.json({
+    success: true,
+    message: '✅ Authentification réussie!',
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      organization_id: req.user.organization_id
+    }
+  });
+});
+
+// Statistiques globales dashboard
 router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const statsQuery = `
@@ -487,10 +425,8 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
         (SELECT COUNT(*) FROM organizations WHERE is_active = true) as active_operators,
         (SELECT COUNT(*) FROM support_tickets WHERE status != 'resolved') as pending_incidents
     `;
-
     const result = await pool.query(statsQuery);
     const stats = result.rows[0];
-
     res.json({
       success: true,
       data: {
@@ -499,12 +435,94 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
         totalRevenue: parseFloat(stats.total_revenue) || 0,
         activeOperators: parseInt(stats.active_operators) || 0,
         pendingIncidents: parseInt(stats.pending_incidents) || 0,
-        apiCalls24h: 15420 // TODO: Implémenter tracking API calls
-      }
+        apiCalls24h: 15420, // À implémenter
+      },
     });
   } catch (error) {
     console.error('Erreur stats:', error);
     res.status(500).json({ error: 'Erreur serveur', details: error.message });
+  }
+});
+
+// 3. Gestion des opérateurs (organizations)
+// Liste des opérateurs
+router.get('/operators', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { search = '', is_active } = req.query;
+    const params = [];
+    let where = 'WHERE 1=1';
+    if (search) {
+      params.push(`%${search}%`);
+      where += ` AND (LOWER(name) LIKE LOWER($${params.length}))`;
+    }
+    if (typeof is_active !== 'undefined') {
+      params.push(String(is_active).toLowerCase() === 'true');
+      where += ` AND is_active = $${params.length}`;
+    }
+    const query = `
+      SELECT id, name, type, is_active, created_at
+      FROM organizations
+      ${where}
+      ORDER BY created_at DESC
+      LIMIT 200
+    `;
+    const result = await pool.query(query, params);
+    return res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Erreur liste opérateurs:', error);
+    return res.status(500).json({ error: 'Erreur serveur', details: error.message });
+  }
+});
+
+// Créer un opérateur - AVEC SUPABASE
+router.post('/operators', authenticateToken, async (req, res) => {
+  try {
+    console.log('\n=== POST /api/admin-hq/operators ===');
+    console.log('User:', req.user);
+    console.log('Body:', req.body);
+    
+    const { name, type = 'PRIVATE', is_active = true, contact_email = null, contact_phone = null, address = null, city = null, country = null } = req.body || {};
+    
+    if (!name) {
+      console.log('❌ Nom manquant');
+      return res.status(400).json({ error: 'name requis' });
+    }
+
+    console.log('✅ Insertion dans Supabase organizations...');
+    
+    // Utiliser l'API REST Supabase
+    const axios = require('axios');
+    const env = require('../config/env');
+    
+    const payload = {
+      name,
+      type,
+      is_active: !!is_active,
+      contact_email,
+      contact_phone,
+      address,
+      city,
+      country
+    };
+    
+    const { data } = await axios.post(
+      `${env.SUPABASE_URL}/rest/v1/organizations`,
+      payload,
+      {
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        }
+      }
+    );
+    
+    console.log('✅ Opérateur créé dans Supabase:', data[0]);
+    return res.status(201).json({ success: true, data: data[0] });
+  } catch (error) {
+    console.error('❌ Erreur création opérateur:', error);
+    return res.status(500).json({ error: 'Erreur serveur', details: error.message });
   }
 });
 

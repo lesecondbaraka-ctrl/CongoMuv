@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-// https://vitejs.dev/config/
+// Optimized Vite configuration for faster startup.
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -16,20 +16,23 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: [
-      'react',
-      'react-dom',
-      '@supabase/supabase-js'
-    ],
+    include: ['react', 'react-dom'], // Removed '@supabase/supabase-js' if not critical
   },
   server: {
-    // Forcer le rechargement des modules
     watch: {
-      usePolling: true,
+      usePolling: false, // Disabled polling for better performance
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
-  // Pour le support des imports JSON
+  cacheDir: './node_modules/.vite', // Added cache directory for faster rebuilds
   json: {
-    stringify: true
-  }
+    stringify: true,
+  },
+  logLevel: 'info', // Added log level for better diagnostics
 });

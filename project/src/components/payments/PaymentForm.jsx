@@ -56,30 +56,75 @@ const PaymentForm = ({
     setPaymentStatus(null);
     
     try {
-      // Simuler un délai de traitement
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Ici, vous intégrerez l'API de paiement réelle
-      const response = await fetch('/api/payments/process', {
+      const token = localStorage.getItem('token') || localStorage.getItem('app_jwt');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      };
+
+      // Initier le paiement côté backend
+      const initRes = await fetch('http://localhost:3002/api/payments/initiate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          ...data,
+          booking_id: bookingId,
           amount,
-          bookingId,
+          payment_method: data.paymentMethod,
+          provider: data.mobileProvider,
+          phone_number: data.phoneNumber,
+          card_number: data.cardNumber,
+          card_expiry: data.cardExpiry,
+          card_holder_name: data.cardHolderName,
         }),
       });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        setPaymentStatus('success');
-        onSuccess?.(result);
-      } else {
-        throw new Error(result.message || 'Le paiement a échoué');
+
+      const initJson = await initRes.json().catch(() => ({}));
+      if (!initRes.ok) {
+        throw new Error(initJson?.error || initJson?.message || "Échec de l'initialisation du paiement");
       }
+
+      // Si paiement immédiat (cash/carte) -> succès direct
+      if (initJson.status === 'completed') {
+        setPaymentStatus('success');
+        onSuccess?.(initJson);
+        return;
+      }
+
+      // Si Mobile Money: proposer USSD et lancer un polling de statut
+      if (data.paymentMethod === 'mobile_money' && initJson.payment_id) {
+        let attempts = 0;
+        const maxAttempts = 12; // ~60s si intervalle 5s
+        const poll = async () => {
+          attempts += 1;
+          try {
+            const statusRes = await fetch(`http://localhost:3002/api/payments/${initJson.payment_id}/status`, {
+              headers,
+              method: 'GET',
+            });
+            const statusJson = await statusRes.json().catch(() => ({}));
+            if (statusRes.ok && statusJson.status === 'completed') {
+              setPaymentStatus('success');
+              onSuccess?.(statusJson);
+              return;
+            }
+          } catch (e) {
+            console.error('Erreur polling statut paiement:', e);
+          }
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 5000);
+          } else {
+            // Timeout: rester en attente ou afficher une info
+            setPaymentStatus('error');
+          }
+        };
+        // Démarrer le polling, afficher info USSD si dispo
+        setPaymentStatus(null);
+        poll();
+        return;
+      }
+
+      // Cas par défaut: si pas completed et pas mobile_money
+      setPaymentStatus('error');
     } catch (error) {
       console.error('Erreur de paiement:', error);
       setPaymentStatus('error');

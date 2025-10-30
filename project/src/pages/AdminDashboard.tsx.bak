@@ -1,0 +1,854 @@
+import { useState, useEffect, useRef } from 'react';
+// Importation des icônes Lucide
+import { 
+  Trash2, 
+  Plus, 
+  X, 
+  Check,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  Search
+} from 'lucide-react';
+import { useTrips } from '../hooks/useTrips';
+import { useOperators } from '../hooks/useOperators';
+import { useRoutes } from '../hooks/useRoutes';
+
+// Types de base
+type UserRole = 'ADMIN' | 'SUPER_ADMIN' | 'OPERATOR' | 'USER';
+
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  phone: string;
+  created_at: string;
+  avatar_url?: string;
+  is_active?: boolean;
+}
+
+interface Incident {
+  id: string;
+  title: string;
+  description: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  assigned_to?: string;
+}
+
+interface Route {
+  id: string;
+  name: string;
+  start_point: string;
+  end_point: string;
+  distance: number;
+  duration: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Operator {
+  id: string;
+  name: string;
+  contact_email: string;
+  contact_phone: string;
+  address: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Trip {
+  id: string;
+  route_id: string;
+  operator_id: string;
+  departure_time: string;
+  arrival_time: string;
+  price: number;
+  available_seats: number;
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  created_at: string;
+  updated_at: string;
+  vehicle_id?: string;
+  driver_id?: string;
+}
+
+// Constantes
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+
+// Fonction utilitaire pour générer un ID temporaire
+const generateTempId = () => `temp-${Math.random().toString(36).substr(2, 9)}`;
+
+export default function AdminDashboard() {
+  // État de l'interface utilisateur
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'routes' | 'trips' | 'operators' | 'users' | 'incidents' | 'access'>('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // États des modales
+  const [showTripModal, setShowTripModal] = useState(false);
+  const [showRouteModal, setShowRouteModal] = useState(false);
+  const [showOperatorModal, setShowOperatorModal] = useState(false);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
+  
+  // États des notifications
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
+  
+  // État utilisateur
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [me, setMe] = useState<User | null>(null);
+  
+  // États pour les incidents
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [incidentsLoading, setIncidentsLoading] = useState(false);
+  const [incidentsError, setIncidentsError] = useState<string | null>(null);
+  
+  // États pour les invitations
+  const [invite, setInvite] = useState({ email: '', role: 'ADMIN' as UserRole });
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteErr, setInviteErr] = useState<string | null>(null);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  
+  // Hooks personnalisés pour la gestion des données
+  const { 
+    trips, 
+    loading: tripsLoading, 
+    error: tripsError, 
+    createTrip, 
+    deleteTrip,
+    refresh: refreshTrips 
+  } = useTrips();
+  
+  const { 
+    operators, 
+    loading: operatorsLoading, 
+    error: operatorsError, 
+    createOperator, 
+    deleteOperator,
+    refresh: refreshOperators 
+  } = useOperators();
+  
+  const { 
+    routes, 
+    loading: routesLoading, 
+    error: routesError, 
+    createRoute, 
+    deleteRoute,
+    refresh: refreshRoutes 
+  } = useRoutes();
+  
+  // Fonction utilitaire pour les en-têtes d'authentification
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('app_jwt') || '';
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
+
+  const hasValidToken = (): boolean => {
+    const token = localStorage.getItem('app_jwt') || localStorage.getItem('token');
+    return !!token;
+  };
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  // Fonction pour gérer la création optimiste d'un opérateur
+  const handleCreateOperator = async (operatorData: Omit<Operator, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!createOperator) {
+      showToast('Fonction de création non disponible', 'error');
+      return;
+    }
+
+    const tempId = `temp-${Date.now()}`;
+    const newOperator: Operator = {
+      ...operatorData,
+      id: tempId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Mise à jour optimiste
+    const previousOperators = [...operators];
+    await refreshOperators();
+    const currentOperators = [...operators, newOperator];
+    refreshOperators(currentOperators);
+
+    try {
+      const createdOperator = await createOperator(operatorData);
+      
+      // Remplacement de l'opérateur temporaire par celui de la base de données
+      await refreshOperators();
+      const updatedOperators = operators.map(op => op.id === tempId ? createdOperator : op);
+      refreshOperators(updatedOperators);
+      
+      showToast('Opérateur créé avec succès', 'success');
+      setShowOperatorModal(false);
+      return createdOperator;
+    } catch (error) {
+      // En cas d'erreur, on restaure la liste précédente
+      refreshOperators(previousOperators);
+      showToast('Erreur lors de la création de l\'opérateur', 'error');
+      throw error;
+    }
+  };
+
+  // Fonction pour gérer la création optimiste d'une route
+  const handleCreateRoute = async (routeData: Omit<Route, 'id' | 'created_at' | 'updated_at'>) => {
+    const tempId = generateTempId();
+    const newRoute = {
+      ...routeData,
+      id: tempId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Mise à jour optimiste
+    const previousRoutes = [...routes];
+    refreshRoutes([...routes, newRoute]);
+
+    try {
+      const createdRoute = await createRoute(routeData);
+      
+      // Remplacement de la route temporaire par celle de la base de données
+      refreshRoutes(prev => 
+        prev.map(route => route.id === tempId ? createdRoute : route)
+      );
+      
+      showToast('Route créée avec succès', 'success');
+      setShowRouteModal(false);
+    } catch (error) {
+      // En cas d'erreur, on restaure la liste précédente
+      refreshRoutes(previousRoutes);
+      showToast('Erreur lors de la création de la route', 'error');
+    }
+  };
+
+  // Fonction pour gérer la création optimiste d'un voyage
+  const handleCreateTrip = async (tripData: Omit<Trip, 'id' | 'created_at' | 'updated_at' | 'status'>) => {
+    const tempId = generateTempId();
+    const newTrip = {
+      ...tripData,
+      id: tempId,
+      status: 'SCHEDULED' as const,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Mise à jour optimiste
+    const previousTrips = [...trips];
+    refreshTrips([...trips, newTrip]);
+
+    try {
+      const createdTrip = await createTrip(tripData);
+      
+      // Remplacement du voyage temporaire par celui de la base de données
+      refreshTrips(prev => 
+        prev.map(trip => trip.id === tempId ? createdTrip : trip)
+      );
+      
+      showToast('Voyage créé avec succès', 'success');
+      setShowTripModal(false);
+    } catch (error) {
+      // En cas d'erreur, on restaure la liste précédente
+      refreshTrips(previousTrips);
+      showToast('Erreur lors de la création du voyage', 'error');
+    }
+  };
+
+  // Gestion de la suppression optimiste d'un opérateur
+  const handleDelete = async (id: string, type: 'operator' | 'route' | 'trip') => {
+    const confirmMessage = `Êtes-vous sûr de vouloir supprimer cet ${type === 'operator' ? 'opérateur' : type === 'route' ? 'trajet' : 'voyage'} ?`;
+    if (!confirm(confirmMessage)) return;
+
+    const previousData = type === 'operator' ? [...operators] : type === 'route' ? [...routes] : [...trips];
+    const refreshData = type === 'operator' ? refreshOperators : type === 'route' ? refreshRoutes : refreshTrips;
+    const deleteData = type === 'operator' ? deleteOperator : type === 'route' ? deleteRoute : deleteTrip;
+
+    // Mise à jour optimiste
+    refreshData(previousData.filter(item => item.id !== id));
+
+    try {
+      await deleteData(id);
+      showToast(`${type === 'operator' ? 'Opérateur' : type === 'route' ? 'Trajet' : 'Voyage'} supprimé avec succès`, 'success');
+    } catch (error) {
+      console.error(`Erreur lors de la suppression de l'${type === 'operator' ? 'opérateur' : type === 'route' ? 'trajet' : 'voyage'}:`, error);
+      refreshData(previousData);
+      showToast(`Erreur lors de la suppression de l'${type === 'operator' ? 'opérateur' : type === 'route' ? 'trajet' : 'voyage'}`, 'error');
+    }
+  };
+
+  // Gestion des erreurs des hooks
+  useEffect(() => {
+    const errors = [
+      tripsError ? 'Erreur des voyages: ' + tripsError : null,
+      operatorsError ? 'Erreur des opérateurs: ' + operatorsError : null,
+      routesError ? 'Erreur des trajets: ' + routesError : null,
+      incidentsError ? 'Erreur des incidents: ' + incidentsError : null
+    ].filter(Boolean) as string[];
+    
+    // Afficher uniquement la première erreur pour éviter les doublons
+    if (errors.length > 0) {
+      showToast(errors[0], 'error');
+    }
+  }, [tripsError, operatorsError, routesError, incidentsError]);
+  
+  // Gestion du chargement initial des données
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        // Charger les incidents
+        await loadIncidents();
+        
+        // Charger l'utilisateur actuel
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setCurrentUser(userData);
+          setMe(userData);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement initial:', error);
+        showToast('Erreur lors du chargement des données initiales', 'error');
+      }
+    };
+    
+    loadInitialData();
+    
+    // Gestion du redimensionnement de la fenêtre pour la sidebar
+    const handleResize = () => {
+      setSidebarOpen(window.innerWidth >= 1024);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // Fonction pour charger les incidents
+  const loadIncidents = async () => {
+    if (incidentsInFlight.current) return;
+    
+    try {
+      incidentsInFlight.current = true;
+      setIncidentsLoading(true);
+      setIncidentsError(null);
+      
+      const token = localStorage.getItem('app_jwt') || localStorage.getItem('token');
+      if (!token) {
+        setIncidents([]);
+        return;
+      }
+      
+      const controller = new AbortController();
+      const signal = controller.signal;
+      
+      const response = await fetch(`${API_BASE}/incidents`, {
+        headers: getAuthHeaders(),
+        signal
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors du chargement des incidents');
+      
+      const data = await response.json();
+      setIncidents(data);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        setIncidentsError('Erreur lors du chargement des incidents');
+        console.error('Erreur:', error);
+      }
+    } finally {
+      setIncidentsLoading(false);
+      incidentsInFlight.current = false;
+    }
+  };
+  
+  // Gestion de l'envoi d'invitation
+  const submitInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteLoading(true);
+    setInviteErr(null);
+    setInviteMsg(null);
+    
+    try {
+      const response = await fetch(`${API_BASE}/admin-hq/invite`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(invite)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'envoi de l\'invitation');
+      }
+      
+      setInviteMsg('Invitation envoyée avec succès');
+      setInvite({ email: '', role: 'ADMIN' });
+      showToast('Invitation envoyée avec succès', 'success');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
+      setInviteErr(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+  
+  // Gestion de la suppression d'un opérateur
+  const handleDeleteOperator = async (id: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet opérateur ?')) return;
+    
+    try {
+      await deleteOperator(id);
+      showToast('Opérateur supprimé avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'opérateur:', error);
+      showToast('Erreur lors de la suppression de l\'opérateur', 'error');
+    }
+  };
+  
+  // Gestion de la suppression d'un trajet
+  const handleDeleteRoute = async (id: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce trajet ?')) return;
+    
+    try {
+      await deleteRoute(id);
+      showToast('Trajet supprimé avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur lors de la suppression du trajet:', error);
+      showToast('Erreur lors de la suppression du trajet', 'error');
+    }
+  };
+
+  // Gestion de la création optimiste d'un voyage
+  const handleCreateTrip = async (tripData: Omit<Trip, 'id' | 'created_at' | 'updated_at' | 'status'>) => {
+    if (!createTrip) {
+      showToast('Fonction de création non disponible', 'error');
+      return;
+    }
+
+    const tempId = `temp-${Date.now()}`;
+    const newTrip: Trip = {
+      ...tripData,
+      id: tempId,
+      status: 'scheduled',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      vehicle_id: tripData.vehicle_id || '',
+      driver_id: tripData.driver_id || ''
+    };
+
+    // Mise à jour optimiste
+    const previousTrips = [...trips];
+    await refreshTrips();
+    const currentTrips = [...trips, newTrip];
+    refreshTrips(currentTrips);
+
+    try {
+      const createdTrip = await createTrip(tripData);
+      
+      // Remplacement du voyage temporaire par celui de la base de données
+      await refreshTrips();
+      const updatedTrips = trips.map(trip => trip.id === tempId ? createdTrip : trip);
+      refreshTrips(updatedTrips);
+      
+      showToast('Voyage créé avec succès', 'success');
+      setShowTripModal(false);
+      return createdTrip;
+    } catch (error) {
+      // En cas d'erreur, on restaure la liste précédente
+      refreshTrips(previousTrips);
+      showToast('Erreur lors de la création du voyage', 'error');
+      throw error;
+    }
+  };
+    return !!(token && token !== 'null' && token !== 'undefined');
+  };
+
+  // Handle route deletion
+  const handleDeleteRoute = async (id: string) => {
+    if (!confirm('Supprimer ce trajet ?')) return;
+    try {
+      await deleteRoute(id);
+      showToast('Trajet supprimé avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur suppression trajet:', error);
+      showToast('Erreur lors de la suppression du trajet', 'error');
+    }
+  };
+
+  // Handle operator deletion
+  const handleDeleteOperator = async (id: string) => {
+    if (!confirm("Supprimer cet opérateur ?")) return;
+    try {
+      await deleteOperator(id);
+      showToast('Opérateur supprimé avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur suppression opérateur:', error);
+      showToast('Erreur lors de la suppression de l\'opérateur', 'error');
+    }
+  };
+
+  // Handle errors from hooks
+  useEffect(() => {
+    if (tripsError) {
+      showToast(`Erreur voyages: ${tripsError}`, 'error');
+    }
+  }, [tripsError]);
+
+  // Load current user on mount
+  useEffect(() => {
+    const loadCurrentUser = () => {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          setCurrentUser(user);
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+        }
+      }
+    };
+    
+    loadCurrentUser();
+  }, []);
+    try {
+      if (incidentsInFlight.current) return;
+      incidentsInFlight.current = true;
+      setIncidentsLoading(true);
+      setIncidentsError(null);
+      const token = localStorage.getItem('app_jwt') || localStorage.getItem('token');
+      if (!token) {
+        setIncidentsList([]);
+        setIncidentsLoading(false);
+        incidentsInFlight.current = false;
+        return;
+      }
+      let res = await fetch(`${API_BASE}/api/admin-hq/incidents`, {
+        headers: getAuthHeaders('GET'),
+        credentials: 'include',
+        signal
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          res = await fetch(`${API_BASE}/api/admin-hq/incidents`, {
+            headers: getAuthHeaders('GET', true),
+            credentials: 'include',
+            signal
+          });
+          if (!res.ok) {
+            setIncidentsList([]);
+            return;
+          }
+        } else {
+          setIncidentsList([]);
+          return;
+        }
+      }
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data?.incidents || data?.items || data?.data || []);
+      setIncidentsList(list);
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
+      console.error('Erreur chargement incidents:', e);
+      setIncidentsError('Échec de chargement des incidents');
+    } finally {
+      setIncidentsLoading(false);
+      incidentsInFlight.current = false;
+    }
+  };
+
+  const submitInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteLoading(true);
+    setInviteErr(null);
+    setInviteMsg(null);
+    try {
+      const token = localStorage.getItem('app_jwt') || localStorage.getItem('token');
+      if (!token) {
+        setInviteErr('Aucun token d\'authentification. Veuillez vous connecter.');
+        return;
+      }
+      const res = await fetch(`${API_BASE}/api/users/admin/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(invite)
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.message || `Erreur ${res.status}: ${res.statusText}`);
+      }
+      setInviteMsg('Invitation envoyée avec succès');
+      setInvite({ email: '', role: 'ADMIN', organization_name: '', organization_id: '' });
+    } catch (err: any) {
+      setInviteErr(err.message || 'Erreur lors de l\'invitation');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  // Charger le profil utilisateur UNE SEULE FOIS au montage
+  useEffect(() => {
+    const storedRole = localStorage.getItem('app_role') || 'SUPER_ADMIN';
+    const storedEmail = localStorage.getItem('app_email') || 'admin@congomuv.cd';
+    setMe({ role: storedRole.toUpperCase(), email: storedEmail });
+  }, []);
+
+  // Les hooks personnalisés gèrent déjà le chargement des données
+  // Pas besoin de fonctions de chargement supplémentaires
+
+  return (
+    <div className="flex h-screen bg-slate-100">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-800 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform lg:translate-x-0 lg:static`}>
+        <div className="flex flex-col items-center justify-center h-20 bg-slate-900 border-b border-slate-700">
+          <h1 className="text-xl font-bold text-white">CongoMuv Admin</h1>
+          {me?.role === 'SUPER_ADMIN' && (
+            <span className="mt-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full shadow-lg">
+              🛡️ SUPER ADMIN
+            </span>
+          )}
+        </div>
+        <nav className="mt-8 px-4 space-y-2">
+          {[
+            { key: 'dashboard', icon: Ticket, label: 'Dashboard' },
+            { key: 'routes', icon: Route, label: 'Trajets' },
+            { key: 'trips', icon: Bus, label: 'Voyages' },
+            { key: 'operators', icon: Building, label: 'Opérateurs' },
+            { key: 'users', icon: Users, label: 'Utilisateurs' },
+            { key: 'incidents', icon: AlertTriangleIcon, label: 'Incidents' },
+            { key: 'access', icon: Shield, label: 'Gestion des accès', superAdminOnly: true }
+          ].map(item => (
+            (!item.superAdminOnly || me?.role === 'SUPER_ADMIN') && (
+              <button key={item.key} onClick={() => setActiveTab(item.key as any)} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${activeTab === item.key ? 'bg-blue-700 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}>
+                <item.icon className="w-5 h-5" />
+                <span>{item.label}</span>
+              </button>
+            )
+          ))}
+        </nav>
+        <div className="absolute bottom-4 left-4 right-4">
+          <button onClick={() => { localStorage.removeItem('app_jwt'); window.location.href = '/login'; }} className="w-full flex items-center space-x-3 px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg">
+            <LogOut className="w-5 h-5" />
+            <span>Déconnexion</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white shadow-sm border-b border-slate-200">
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 rounded-md text-slate-400" aria-label="Toggle sidebar menu">
+                <Menu className="w-6 h-6" />
+              </button>
+              {me?.role === 'SUPER_ADMIN' && (
+                <span className="hidden lg:inline-flex px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full">
+                  🛡️ SUPER ADMIN - Contrôle Total
+                </span>
+              )}
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">
+              {activeTab === 'dashboard' && 'Tableau de bord'}
+              {activeTab === 'routes' && 'Gestion des trajets'}
+              {activeTab === 'trips' && 'Gestion des voyages'}
+              {activeTab === 'operators' && 'Gestion des opérateurs'}
+              {activeTab === 'users' && 'Gestion des utilisateurs'}
+              {activeTab === 'incidents' && 'Gestion des incidents'}
+              {activeTab === 'access' && 'Contrôle des accès'}
+            </h2>
+            <div className="flex items-center gap-2">
+              {(() => {
+                const token = localStorage.getItem('app_jwt');
+                if (!token || token === 'null' || token === 'undefined') {
+                  return (
+                    <button 
+                      onClick={() => { localStorage.clear(); window.location.hash = '#/login'; }}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700"
+                    >
+                      ⚠️ Non authentifié - Cliquez pour vous reconnecter
+                    </button>
+                  );
+                }
+                return (
+                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">
+                    ✓ Authentifié
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
+          {/* Message info si pas de token */}
+          {!hasValidToken() && (
+            <div className="mb-4 bg-blue-50 border-l-4 border-blue-600 p-4 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-bold">Mode consultation :</span> Vous n'êtes pas authentifié. Les listes sont vides mais tous les formulaires sont accessibles. Connectez-vous pour charger et gérer les données réelles.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DASHBOARD - Statistiques uniquement */}
+          {activeTab === 'dashboard' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: 'Réservations', value: stats.totalBookings, icon: Ticket, color: 'blue' },
+                { label: 'Revenus', value: `${(stats.totalRevenue / 1000000).toFixed(1)}M FC`, icon: Ticket, color: 'blue' },
+                { label: 'Voyages actifs', value: stats.activeTrips, icon: Calendar, color: 'cyan' },
+                { label: 'Passagers', value: stats.totalPassengers, icon: Users, color: 'blue' }
+              ].map((stat, i) => (
+                <div key={i} className={`bg-white rounded-xl shadow-sm p-6 border-l-4 border-${stat.color}-500`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">{stat.label}</p>
+                      <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                    </div>
+                    <stat.icon className={`w-8 h-8 text-${stat.color}-600`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* TRAJETS - Routes uniquement */}
+          {activeTab === 'routes' && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold">Trajets disponibles</h3>
+                  {me?.role === 'SUPER_ADMIN' && (
+                    <p className="text-sm text-purple-600 mt-1">✓ Accès complet : Créer, Modifier, Supprimer</p>
+                  )}
+                </div>
+                <button type="button" onClick={() => setShowRouteModal(true)} className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 flex items-center gap-2">
+                  <Plus className="w-4 h-4" />Nouveau trajet
+                </button>
+              </div>
+              {routesError && (
+                <div className="mb-3 px-3 py-2 bg-red-50 text-red-700 rounded border border-red-200">{routesError} (les actions restent disponibles)</div>
+              )}
+              {routesLoading ? (
+                <div className="text-center py-10 text-slate-500">Chargement...</div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4">Nom</th>
+                      <th className="text-left py-3 px-4">Code</th>
+                      <th className="text-left py-3 px-4">Départ</th>
+                      <th className="text-left py-3 px-4">Arrivée</th>
+                      <th className="text-left py-3 px-4">Prix</th>
+                      <th className="text-right py-3 px-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {routesList.map(route => (
+                      <tr key={route.id} className="border-b hover:bg-slate-50">
+                        <td className="py-3 px-4 font-medium">{route.name}</td>
+                        <td className="py-3 px-4">{route.route_code}</td>
+                        <td className="py-3 px-4">{route.departure_city}</td>
+                        <td className="py-3 px-4">{route.arrival_city}</td>
+                        <td className="py-3 px-4 font-semibold text-blue-700">{route.base_price?.toLocaleString()} FC</td>
+                        <td className="py-3 px-4 text-right">
+                          <button className="text-blue-600 mr-2" aria-label="Edit" title="Modifier"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteRoute(route.id)} className="text-red-600 hover:text-red-900">Supprimer</button><Trash2 className="w-4 h-4" />
+                        </td>
+                      </tr>
+                    ))}
+                    {routesList.length === 0 && (
+                      <tr>
+                        <td className="py-6 px-4 text-center text-slate-500" colSpan={6}>Aucun trajet</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+
+              {showRouteModal && (
+                <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+                    <div className="p-4 border-b flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Créer un trajet</h3>
+                      <button onClick={() => setShowRouteModal(false)} className="p-2 hover:bg-slate-100 rounded-lg">✖</button>
+                    </div>
+                    <div className="p-4">
+                      <form
+                        className="space-y-3"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!hasValidToken()) {
+                            showToast('Aucun token d\'authentification. Connectez-vous d\'abord.', 'error');
+                            return;
+                          }
+                          const form = e.target as HTMLFormElement;
+                          const data = Object.fromEntries(new FormData(form) as any) as any;
+                          
+                          const routeData = {
+                            operator_id: String(data.operator_id || ''),
+                            name: data.name,
+                            base_price: Number(data.basePrice || 0),
+                            route_code: data.route_code || data.code,
+                            distance_km: Number(data.distance_km || data.distance || 0),
+                            duration_minutes: Number(data.duration_minutes || data.estimatedDuration || 0),
+                            stops: (data.stops ? String(data.stops) : (data.waypoints ? String(data.waypoints) : '')).split(',').map(s => s.trim()).filter(Boolean),
+                            is_active: data.is_active === 'on' || data.isActive === 'on',
+                            departure_city: data.departure_city || data.origin,
+                            arrival_city: data.arrival_city || data.destination,
+                          };
+                          
+                          try {
+                            await createRoute(routeData);
+                            setShowRouteModal(false);
+                            form.reset();
+                            // La notification de succès est gérée par le hook useRoutes
+                          } catch (error) {
+                            console.error('Erreur création trajet:', error);
+                            // L'erreur est déjà gérée par le hook useRoutes
+                          }
+                        }}
+                      >
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label htmlFor="dash-route-operator_id" className="text-sm">Opérateur ID *</label>
+                            <input id="dash-route-operator_id" name="operator_id" className="w-full px-3 py-2 border rounded" placeholder="ID opérateur" title="ID opérateur" required />
+                          </div>
+                          <div>
+                            <label htmlFor="dash-route-basePrice" className="text-sm">Prix de base *</label>
+                            <input id="dash-route-basePrice" name="basePrice" type="number" min="0" step="0.01" className="w-full px-3 py-2 border rounded" placeholder="0.00" title="Prix de base" required />
+                          </div>
+                          <div>
+                            <label htmlFor="dash-route-code" className="text-sm">Code *</label>
+                            <input id="dash-route-code" name="code" className="w-full px-3 py-2 border rounded" placeholder="Code" title="Code" required />
+                          </div>
+                          <div>
+                            <label htmlFor="dash-route-name" className="text-sm">Nom *</label>
+                            <input id="dash-route-name" name="name" className="w-full px-3 py-2 border rounded" placeholder="Nom" title="Nom" required />
+                          </div>
+                          <div>
+                            <label htmlFor="dash-route-origin" className="text-sm">Origine *</label>
+                            <input id="dash-route-origin" name="origin" className="w-full px-3 py-2 border rounded" placeholder="Ville de départ" title="Ville de départ" required />
+                          </div>
+                          <div>
+                            <label htmlFor="dash-route-destination" className="text-sm">Destination *</label>
+                            <input id="dash-route-destination" name="destination" className="w-full px-3 py-2 border rounded" placeholder="Ville d'arrivée" title="Ville d'arrivée" required />
+                          </div>
+                          <div>
+                            <label htmlFor="dash-route-distance" className="text-sm">Distance (km) *</label>
+                            <input id="dash-route-distance" name="distance" type="number`

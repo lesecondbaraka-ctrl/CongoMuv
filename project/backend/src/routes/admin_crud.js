@@ -1,151 +1,128 @@
+/**
+ * Routes CRUD administratives - gestion sécurisée multi-rôles
+ */
+
 const express = require('express');
-const axios = require('axios');
 const router = express.Router();
-const env = require('../config/env');
-const { verifyJWT } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+const pool = require('../config/database');
 
-const SUPABASE_URL = env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-
-function assertAdmin(req, res, next) {
+// Middleware vérifier rôles admin et superadmin
+const requireAdmin = (req, res, next) => {
   try {
     const role = String(req.user?.role || '').toUpperCase();
-    const allowed = ['ADMIN', 'SUPER_ADMIN', 'CONGOMUV_HQ', 'ONATRA', 'TRANSCO', 'PRIVATE'];
-    if (!allowed.includes(role)) return res.status(403).json({ error: 'Accès refusé' });
+    const allowedRoles = ['SUPERADMIN', 'ADMIN', 'CONGOMUV_HQ', 'ONATRA', 'TRANSCO', 'PRIVATE'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({ error: 'Accès refusé - rôle non autorisé' });
+    }
     next();
-  } catch {
+  } catch (error) {
     return res.status(403).json({ error: 'Accès refusé' });
   }
-}
+};
 
-// Helpers
-function sbHeaders() {
-  return {
-    apikey: SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    'Content-Type': 'application/json'
-  };
-}
+// Lister toutes les routes (ajustez selon vos tables)
+router.get('/routes', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const params = [];
+    let filterQuery = '';
 
-// ROUTES CRUD
-router.get('/routes', verifyJWT, assertAdmin, async (req, res) => {
-  try {
-    const params = {
-      select: 'id,name,route_code,operator_id,departure_city,arrival_city,is_active',
-      order: 'created_at.desc'
-    };
-    if (req.query?.operator_id) params['operator_id'] = `eq.${req.query.operator_id}`;
-    const { data } = await axios.get(`${SUPABASE_URL}/rest/v1/routes`, {
-      headers: {
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-      },
-      params
-    });
-    return res.json({ items: Array.isArray(data) ? data : [] });
-  } catch (e) {
-    return res.status(500).json({ error: 'Erreur chargement trajets' });
-  }
-});
-router.post('/routes', verifyJWT, assertAdmin, async (req, res) => {
-  try {
-    const body = req.body || {};
-    if (!body.operator_id || !body.name || !body.base_price) {
-      return res.status(400).json({ error: 'operator_id, name, base_price requis' });
+    if (req.query.operator_id) {
+      filterQuery = ' WHERE operator_id = $1 ';
+      params.push(req.query.operator_id);
     }
-    const payload = {
-      operator_id: body.operator_id,
-      transport_type_id: body.transport_type_id || null,
-      departure_city_id: body.departure_city_id || null,
-      arrival_city_id: body.arrival_city_id || null,
-      route_code: body.route_code || null,
-      name: body.name,
-      distance_km: body.distance_km || null,
-      duration_minutes: body.duration_minutes || null,
-      base_price: body.base_price,
-      stops: body.stops || null,
-      is_active: body.is_active !== undefined ? !!body.is_active : true,
-      departure_city: body.departure_city || null,
-      arrival_city: body.arrival_city || null,
-    };
-    const { data } = await axios.post(`${SUPABASE_URL}/rest/v1/routes`, payload, { headers: sbHeaders() });
-    return res.status(201).json({ route: Array.isArray(data) ? data[0] : data });
-  } catch (e) {
-    return res.status(500).json({ error: 'Erreur création trajet' });
+
+    const query = `
+      SELECT id, name, route_code, operator_id, departure_city, arrival_city, is_active, created_at
+      FROM routes
+      ${filterQuery}
+      ORDER BY created_at DESC
+    `;
+    const result = await pool.query(query, params);
+    res.json({ success: true, items: result.rows });
+  } catch (error) {
+    console.error('Erreur récupération routes:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
-router.put('/routes/:id', verifyJWT, assertAdmin, async (req, res) => {
+// Créer une nouvelle route - SIMPLIFIÉ
+router.post('/routes', authenticateToken, async (req, res) => {
+  console.log('\n=== POST /api/admin-crud/routes ===');
+  console.log('User:', req.user);
+  console.log('Body:', req.body);
   try {
-    const id = req.params.id;
-    const { data } = await axios.patch(`${SUPABASE_URL}/rest/v1/routes?id=eq.${id}`, req.body || {}, {
-      headers: { ...sbHeaders(), Prefer: 'return=representation' }
-    });
-    return res.json({ route: Array.isArray(data) ? data[0] : data });
-  } catch (e) {
-    return res.status(500).json({ error: 'Erreur mise à jour trajet' });
-  }
-});
+    const {
+      operator_id, name, base_price,
+      transport_type_id, departure_city_id, arrival_city_id,
+      route_code, distance_km, duration_minutes,
+      stops, is_active, departure_city, arrival_city
+    } = req.body;
 
-router.delete('/routes/:id', verifyJWT, assertAdmin, async (req, res) => {
-  try {
-    const id = req.params.id;
-    await axios.delete(`${SUPABASE_URL}/rest/v1/routes`, {
-      headers: { ...sbHeaders(), Prefer: 'return=minimal' },
-      params: { id: `eq.${id}` }
-    });
-    return res.status(204).end();
-  } catch (e) {
-    return res.status(500).json({ error: 'Erreur suppression trajet' });
-  }
-});
-
-// TRIPS CRUD
-router.post('/trips', verifyJWT, assertAdmin, async (req, res) => {
-  try {
-    const b = req.body || {};
-    if (!b.route_id || !b.departure_datetime || !b.total_seats) {
-      return res.status(400).json({ error: 'route_id, departure_datetime, total_seats requis' });
+    if (!operator_id || !name || !base_price) {
+      return res.status(400).json({ error: 'operator_id, name et base_price sont requis' });
     }
-    const payload = {
-      route_id: b.route_id,
-      departure_datetime: b.departure_datetime,
-      arrival_datetime: b.arrival_datetime || null,
-      available_seats: b.available_seats ?? b.total_seats,
-      total_seats: b.total_seats,
-      vehicle_number: b.vehicle_number || null,
-      status: b.status || 'scheduled',
-      price: b.price || null
-    };
-    const { data } = await axios.post(`${SUPABASE_URL}/rest/v1/trips`, payload, { headers: sbHeaders() });
-    return res.status(201).json({ trip: Array.isArray(data) ? data[0] : data });
-  } catch (e) {
-    return res.status(500).json({ error: 'Erreur création voyage' });
+
+    const insertQuery = `
+      INSERT INTO routes (operator_id, name, base_price, transport_type_id, departure_city_id, arrival_city_id,
+        route_code, distance_km, duration_minutes, stops, is_active, departure_city, arrival_city)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      RETURNING *
+    `;
+    const values = [
+      operator_id, name, base_price, transport_type_id || null, departure_city_id || null,
+      arrival_city_id || null, route_code || null, distance_km || null, duration_minutes || null,
+      stops || null, is_active !== undefined ? is_active : true, departure_city || null, arrival_city || null
+    ];
+    const result = await pool.query(insertQuery, values);
+    console.log('✅ Route créée:', result.rows[0]);
+    res.status(201).json({ success: true, route: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Erreur création route:', error);
+    res.status(500).json({ error: 'Erreur serveur', details: error.message });
   }
 });
 
-router.put('/trips/:id', verifyJWT, assertAdmin, async (req, res) => {
+// Mettre à jour une route
+router.put('/routes/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id;
-    const { data } = await axios.patch(`${SUPABASE_URL}/rest/v1/trips?id=eq.${id}`, req.body || {}, {
-      headers: { ...sbHeaders(), Prefer: 'return=representation' }
-    });
-    return res.json({ trip: Array.isArray(data) ? data[0] : data });
-  } catch (e) {
-    return res.status(500).json({ error: 'Erreur mise à jour voyage' });
+    const payload = req.body;
+
+    if (!Object.keys(payload).length) {
+      return res.status(400).json({ error: 'Aucune donnée à mettre à jour' });
+    }
+
+    const sets = Object.keys(payload).map((key, i) => `${key} = $${i+1}`).join(', ');
+    const values = Object.values(payload);
+    values.push(id);
+
+    const query = `UPDATE routes SET ${sets} WHERE id = $${values.length} RETURNING *`;
+
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Route non trouvée' });
+    }
+
+    res.json({ success: true, route: result.rows[0] });
+  } catch (error) {
+    console.error('Erreur mise à jour route:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
-router.delete('/trips/:id', verifyJWT, assertAdmin, async (req, res) => {
+// Supprimer une route
+router.delete('/routes/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id;
-    await axios.delete(`${SUPABASE_URL}/rest/v1/trips`, {
-      headers: { ...sbHeaders(), Prefer: 'return=minimal' },
-      params: { id: `eq.${id}` }
-    });
-    return res.status(204).end();
-  } catch (e) {
-    return res.status(500).json({ error: 'Erreur suppression voyage' });
+    const result = await pool.query('DELETE FROM routes WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Route non trouvée' });
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error('Erreur suppression route:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 

@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { format, addDays } from 'date-fns';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Calendar } from '../ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+// Local helpers to avoid external date-fns dependency
+const addDays = (date, days) => {
+  const d = new Date(date instanceof Date ? date : new Date(date));
+  d.setDate(d.getDate() + Number(days || 0));
+  return d;
+};
+const formatDateInput = (date) => {
+  const d = new Date(date instanceof Date ? date : new Date(date));
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 import { CalendarIcon, Clock, MapPin, Bus, User, CreditCard, Info } from 'lucide-react';
-import { cn } from '../../lib/utils';
 
 const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators = [], vehicles = [] }) => {
   const [departureDate, setDepartureDate] = useState(initialData.departureDate || new Date());
@@ -51,8 +56,8 @@ const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators 
   const handleFormSubmit = (data) => {
     const formattedData = {
       ...data,
-      departureDateTime: `${format(new Date(data.departureDate), 'yyyy-MM-dd')}T${data.departureTime}:00`,
-      arrivalDateTime: `${format(new Date(data.arrivalDate), 'yyyy-MM-dd')}T${data.arrivalTime}:00`,
+      departureDateTime: `${formatDateInput(new Date(data.departureDate))}T${data.departureTime}:00`,
+      arrivalDateTime: `${formatDateInput(new Date(data.arrivalDate))}T${data.arrivalTime}:00`,
       price: parseFloat(data.price),
       availableSeats: parseInt(data.availableSeats, 10)
     };
@@ -71,46 +76,40 @@ const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators 
           </h3>
           
           <div className="space-y-2">
-            <Label htmlFor="operatorId">Opérateur *</Label>
-            <Select 
-              value={selectedOperator} 
-              onValueChange={(value) => {
-                setSelectedOperator(value);
-                setValue('vehicleId', ''); // Réinitialiser la sélection du véhicule
+            <label htmlFor="operatorId" className="block text-sm font-medium">Opérateur *</label>
+            <select
+              id="operatorId"
+              className="w-full px-3 py-2 border rounded"
+              value={selectedOperator}
+              onChange={(e) => {
+                setSelectedOperator(e.target.value);
+                setValue('vehicleId', '');
               }}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un opérateur" />
-              </SelectTrigger>
-              <SelectContent>
-                {operators.map((operator) => (
-                  <SelectItem key={operator.id} value={operator.id}>
-                    {operator.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="" disabled>Sélectionner un opérateur</option>
+              {operators.map((operator) => (
+                <option key={operator.id} value={operator.id}>{operator.name}</option>
+              ))}
+            </select>
             {errors.operatorId && <p className="text-sm text-red-500">Ce champ est requis</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="vehicleId">Véhicule *</Label>
-            <Select 
-              value={watch('vehicleId')} 
-              onValueChange={(value) => setValue('vehicleId', value)}
+            <label htmlFor="vehicleId" className="block text-sm font-medium">Véhicule *</label>
+            <select
+              id="vehicleId"
+              className="w-full px-3 py-2 border rounded"
+              value={watch('vehicleId')}
+              onChange={(e) => setValue('vehicleId', e.target.value)}
               disabled={!selectedOperator}
             >
-              <SelectTrigger>
-                <SelectValue placeholder={selectedOperator ? "Sélectionner un véhicule" : "Sélectionnez d'abord un opérateur"} />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredVehicles.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.name} - {vehicle.licensePlate} ({vehicle.type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="" disabled>{selectedOperator ? 'Sélectionner un véhicule' : "Sélectionnez d'abord un opérateur"}</option>
+              {filteredVehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.name} - {vehicle.licensePlate} ({vehicle.type})
+                </option>
+              ))}
+            </select>
             {errors.vehicleId && <p className="text-sm text-red-500">Ce champ est requis</p>}
           </div>
         </div>
@@ -123,20 +122,18 @@ const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators 
           </h3>
           
           <div className="space-y-2">
-            <Label htmlFor="routeId">Itinéraire *</Label>
-            <Select 
-              value={watch('routeId')} 
-              onValueChange={(value) => setValue('routeId', value)}
+            <label htmlFor="routeId" className="block text-sm font-medium">Itinéraire *</label>
+            <select
+              id="routeId"
+              className="w-full px-3 py-2 border rounded"
+              value={watch('routeId')}
+              onChange={(e) => setValue('routeId', e.target.value)}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un itinéraire" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="route-1">Kinshasa - Matadi</SelectItem>
-                <SelectItem value="route-2">Kinshasa - Kikwit</SelectItem>
-                <SelectItem value="route-3">Kinshasa - Mbuji-Mayi</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="" disabled>Sélectionner un itinéraire</option>
+              <option value="route-1">Kinshasa - Matadi</option>
+              <option value="route-2">Kinshasa - Kikwit</option>
+              <option value="route-3">Kinshasa - Mbuji-Mayi</option>
+            </select>
             {errors.routeId && <p className="text-sm text-red-500">Ce champ est requis</p>}
           </div>
         </div>
@@ -150,73 +147,23 @@ const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators 
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Date de départ *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !departureDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {departureDate ? format(departureDate, "PPP") : <span>Choisir une date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={departureDate}
-                    onSelect={setDepartureDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <label className="block text-sm font-medium">Date de départ *</label>
+              <input type="date" className="w-full px-3 py-2 border rounded" value={formatDateInput(departureDate)} onChange={(e) => setDepartureDate(new Date(e.target.value))} />
             </div>
 
             <div className="space-y-2">
-              <Label>Heure de départ *</Label>
-              <Input 
-                type="time" 
-                value={departureTime}
-                onChange={(e) => setDepartureTime(e.target.value)}
-              />
+              <label className="block text-sm font-medium">Heure de départ *</label>
+              <input type="time" className="w-full px-3 py-2 border rounded" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label>Date d'arrivée *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !arrivalDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {arrivalDate ? format(arrivalDate, "PPP") : <span>Choisir une date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={arrivalDate}
-                    onSelect={setArrivalDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <label className="block text-sm font-medium">Date d'arrivée *</label>
+              <input type="date" className="w-full px-3 py-2 border rounded" value={formatDateInput(arrivalDate)} onChange={(e) => setArrivalDate(new Date(e.target.value))} />
             </div>
 
             <div className="space-y-2">
-              <Label>Heure d'arrivée *</Label>
-              <Input 
-                type="time" 
-                value={arrivalTime}
-                onChange={(e) => setArrivalTime(e.target.value)}
-              />
+              <label className="block text-sm font-medium">Heure d'arrivée *</label>
+              <input type="time" className="w-full px-3 py-2 border rounded" value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} />
             </div>
           </div>
         </div>
@@ -230,28 +177,14 @@ const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators 
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Prix (CDF) *</Label>
-              <Input 
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                {...register('price', { required: 'Le prix est requis' })}
-              />
+              <label htmlFor="price" className="block text-sm font-medium">Prix (CDF) *</label>
+              <input id="price" type="number" min="0" step="0.01" className="w-full px-3 py-2 border rounded" {...register('price', { required: 'Le prix est requis' })} />
               {errors.price && <p className="text-sm text-red-500">{errors.price.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="availableSeats">Places disponibles *</Label>
-              <Input 
-                id="availableSeats"
-                type="number"
-                min="1"
-                {...register('availableSeats', { 
-                  required: 'Le nombre de places est requis',
-                  min: { value: 1, message: 'Minimum 1 place' }
-                })}
-              />
+              <label htmlFor="availableSeats" className="block text-sm font-medium">Places disponibles *</label>
+              <input id="availableSeats" type="number" min="1" className="w-full px-3 py-2 border rounded" {...register('availableSeats', { required: 'Le nombre de places est requis', min: { value: 1, message: 'Minimum 1 place' } })} />
               {errors.availableSeats && <p className="text-sm text-red-500">{errors.availableSeats.message}</p>}
             </div>
           </div>
@@ -266,22 +199,14 @@ const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators 
           
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="status">Statut *</Label>
-              <Select 
-                value={watch('status')} 
-                onValueChange={(value) => setValue('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="scheduled">Planifié</SelectItem>
-                  <SelectItem value="in_progress">En cours</SelectItem>
-                  <SelectItem value="completed">Terminé</SelectItem>
-                  <SelectItem value="cancelled">Annulé</SelectItem>
-                  <SelectItem value="delayed">Retardé</SelectItem>
-                </SelectContent>
-              </Select>
+              <label htmlFor="status" className="block text-sm font-medium">Statut *</label>
+              <select id="status" className="w-full px-3 py-2 border rounded" value={watch('status')} onChange={(e) => setValue('status', e.target.value)}>
+                <option value="scheduled">Planifié</option>
+                <option value="in_progress">En cours</option>
+                <option value="completed">Terminé</option>
+                <option value="cancelled">Annulé</option>
+                <option value="delayed">Retardé</option>
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -299,12 +224,10 @@ const TripForm = ({ onSubmit, initialData = {}, isSubmitting = false, operators 
       </div>
 
       <div className="flex justify-end space-x-4 pt-4">
-        <Button type="button" variant="outline" disabled={isSubmitting}>
-          Annuler
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <button type="button" className="px-4 py-2 border rounded" disabled={isSubmitting}>Annuler</button>
+        <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded" disabled={isSubmitting}>
           {isSubmitting ? 'Enregistrement...' : 'Enregistrer le trajet'}
-        </Button>
+        </button>
       </div>
     </form>
   );

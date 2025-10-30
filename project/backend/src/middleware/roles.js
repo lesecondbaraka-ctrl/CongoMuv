@@ -4,9 +4,17 @@ const jwt = require('jsonwebtoken');
 // Hiérarchie des rôles (du plus permissif au moins permissif)
 const ROLE_HIERARCHY = {
   'super_admin': 1000,
+  'superadmin': 1000,
   'admin': 100,
+  'congomuv_hq': 90,
+  'onatra': 80,
+  'transco': 80,
+  'private': 70,
   'operator': 50,
-  'user': 10
+  'driver': 30,
+  'chauffeur': 30,
+  'user': 10,
+  'passenger': 10
 };
 
 // Vérifie si l'utilisateur a un des rôles requis

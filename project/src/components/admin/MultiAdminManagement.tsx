@@ -28,34 +28,17 @@ export function MultiAdminManagement() {
   const loadAdmins = async () => {
     setLoading(true);
     try {
-      // TODO: Appel API réel
-      // const response = await fetch('http://localhost:3002/api/admin/users');
-      
-      // Données simulées
-      setAdmins([
-        {
-          id: '1',
-          email: 'operator@onatra.cd',
-          full_name: 'Jean Mukendi',
-          role: 'OPERATOR',
-          organization_name: 'ONATRA',
-          organization_id: 'org-1',
-          permissions: ['manage_trips', 'view_bookings'],
-          is_active: true,
-          created_at: '2025-01-15T10:00:00'
+      const token = localStorage.getItem('token') || localStorage.getItem('app_jwt');
+      const resp = await fetch('http://localhost:3002/api/admin-hq/admins', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        {
-          id: '2',
-          email: 'admin@sctp.cd',
-          full_name: 'Marie Kabila',
-          role: 'OPERATOR',
-          organization_name: 'SCTP',
-          organization_id: 'org-2',
-          permissions: ['manage_trips', 'manage_drivers'],
-          is_active: true,
-          created_at: '2025-01-18T14:30:00'
-        }
-      ]);
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json?.error || 'Erreur chargement admins');
+      const items = Array.isArray(json?.data) ? json.data : [];
+      setAdmins(items as any);
     } catch (error) {
       console.error('Erreur chargement admins:', error);
     } finally {
@@ -67,14 +50,11 @@ export function MultiAdminManagement() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('app_jwt');
-      // TODO: Appel API
-      // await fetch('http://localhost:3002/api/admin/invite', {
-      //   method: 'POST',
-      //   headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email: inviteEmail, role: inviteRole, organization_name: inviteOrg })
-      // });
-      
-      console.log('Invitation envoyée:', { inviteEmail, inviteRole, inviteOrg, token });
+      await fetch('http://localhost:3002/api/admin-hq/admins/invite', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole, organization_name: inviteOrg })
+      });
       setShowModal(false);
       setInviteEmail('');
       setInviteOrg('');
@@ -86,10 +66,16 @@ export function MultiAdminManagement() {
 
   const handleToggleActive = async (adminId: string) => {
     try {
-      // TODO: Appel API
-      setAdmins(admins.map(a => 
-        a.id === adminId ? { ...a, is_active: !a.is_active } : a
-      ));
+      const token = localStorage.getItem('token') || localStorage.getItem('app_jwt');
+      const resp = await fetch(`http://localhost:3002/api/admin-hq/admins/${adminId}/toggle-active`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!resp.ok) throw new Error('toggle_failed');
+      setAdmins(admins.map(a => a.id === adminId ? { ...a, is_active: !a.is_active } : a));
     } catch (error) {
       console.error('Erreur:', error);
     }
@@ -99,7 +85,15 @@ export function MultiAdminManagement() {
     if (!confirm('Voulez-vous vraiment supprimer cet administrateur ?')) return;
     
     try {
-      // TODO: Appel API
+      const token = localStorage.getItem('token') || localStorage.getItem('app_jwt');
+      const resp = await fetch(`http://localhost:3002/api/admin-hq/admins/${adminId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!resp.ok) throw new Error('delete_failed');
       setAdmins(admins.filter(a => a.id !== adminId));
     } catch (error) {
       console.error('Erreur suppression:', error);

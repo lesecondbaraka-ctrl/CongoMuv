@@ -174,7 +174,7 @@ export const COUNTRY_CODES = [
 // Configuration des cartes (Google Maps, Mapbox, etc.)
 export const MAP_CONFIG = {
   // Clé API Google Maps (à remplacer par votre clé)
-  googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '',
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
   // Style de carte par défaut
   defaultCenter: { lat: -4.0383, lng: 21.7587 }, // Centre sur la RDC
   defaultZoom: 5,

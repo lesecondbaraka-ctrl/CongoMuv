@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Textarea } from '../ui/textarea';
-import { Switch } from '../ui/switch';
 import { Loader2, MapPin, Clock, Route, ArrowRight, X, Save, Info } from 'lucide-react';
 
 const ROUTE_TYPES = [
@@ -35,6 +28,8 @@ const RouteForm = ({
     defaultValues: {
       name: initialData.name || '',
       code: initialData.code || '',
+      operatorId: initialData.operatorId || '',
+      basePrice: initialData.basePrice || 0,
       type: initialData.type || 'intercity',
       origin: initialData.origin || '',
       destination: initialData.destination || '',
@@ -67,6 +62,8 @@ const RouteForm = ({
   const processSubmit = (data) => {
     onSubmit({
       ...data,
+      operatorId: data.operatorId,
+      basePrice: parseFloat(data.basePrice) || 0,
       distance: parseFloat(data.distance) || 0,
       estimatedDuration: parseFloat(data.estimatedDuration) || 0,
       waypoints
@@ -77,26 +74,36 @@ const RouteForm = ({
     <form onSubmit={handleSubmit(processSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Route className="h-5 w-5" />
-                Détails de l'itinéraire
-              </CardTitle>
-              <CardDescription>
-                Définissez les points de départ, d'arrivée et les étapes intermédiaires
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="border rounded-xl p-4 bg-white">
+            <div className="mb-2 flex items-center gap-2 text-slate-900 font-semibold">
+              <Route className="h-5 w-5" /> Détails de l'itinéraire
+            </div>
+            <p className="text-sm text-slate-600 mb-4">Définissez les points de départ, d'arrivée et les étapes intermédiaires</p>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="origin">Ville de départ *</Label>
+                  <label htmlFor="operatorId" className="block text-sm font-medium">Opérateur (ID) *</label>
+                  <input id="operatorId" placeholder="ID opérateur" className="w-full px-3 py-2 border rounded"
+                    {...register('operatorId', { required: 'L\'opérateur est requis' })}
+                  />
+                  {errors.operatorId && <p className="text-sm text-red-500">{errors.operatorId.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="basePrice" className="block text-sm font-medium">Prix de base (CDF) *</label>
+                  <input id="basePrice" type="number" step="0.01" min="0" placeholder="Ex: 20000" className="w-full px-3 py-2 border rounded"
+                    {...register('basePrice', { required: 'Le prix de base est requis', min: { value: 0, message: 'Doit être >= 0' } })}
+                  />
+                  {errors.basePrice && <p className="text-sm text-red-500">{errors.basePrice.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="origin" className="block text-sm font-medium">Ville de départ *</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="origin"
-                      placeholder="Ex: Kinshasa"
-                      className="pl-10"
+                    <input id="origin" placeholder="Ex: Kinshasa" className="pl-10 w-full px-3 py-2 border rounded"
                       {...register('origin', { required: 'La ville de départ est requise' })}
                     />
                   </div>
@@ -104,13 +111,10 @@ const RouteForm = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="destination">Ville d'arrivée *</Label>
+                  <label htmlFor="destination" className="block text-sm font-medium">Ville d'arrivée *</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="destination"
-                      placeholder="Ex: Goma"
-                      className="pl-10"
+                    <input id="destination" placeholder="Ex: Goma" className="pl-10 w-full px-3 py-2 border rounded"
                       {...register('destination', { required: 'La ville d\'arrivée est requise' })}
                     />
                   </div>
@@ -119,21 +123,13 @@ const RouteForm = ({
               </div>
 
               <div className="space-y-2">
-                <Label>Points d'arrêt intermédiaires</Label>
+                <label className="block text-sm font-medium">Points d'arrêt intermédiaires</label>
                 <div className="flex space-x-2">
                   <div className="flex-1 relative">
                     <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Ajouter un point d'arrêt"
-                      value={newWaypoint}
-                      onChange={(e) => setNewWaypoint(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && addWaypoint(e)}
-                      className="pl-10"
-                    />
+                    <input placeholder="Ajouter un point d'arrêt" value={newWaypoint} onChange={(e) => setNewWaypoint(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addWaypoint(e)} className="pl-10 w-full px-3 py-2 border rounded" />
                   </div>
-                  <Button type="button" onClick={addWaypoint} variant="outline">
-                    Ajouter
-                  </Button>
+                  <button type="button" onClick={addWaypoint} className="px-3 py-2 border rounded">Ajouter</button>
                 </div>
                 
                 {waypoints.length > 0 && (
@@ -156,142 +152,90 @@ const RouteForm = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="distance">Distance (km) *</Label>
+                  <label htmlFor="distance" className="block text-sm font-medium">Distance (km) *</label>
                   <div className="relative">
-                    <Input
-                      id="distance"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="Ex: 150.5"
-                      {...register('distance', { 
-                        required: 'La distance est requise',
-                        min: { value: 0, message: 'La distance doit être positive' }
-                      })}
+                    <input id="distance" type="number" step="0.1" min="0" placeholder="Ex: 150.5" className="w-full px-3 py-2 border rounded"
+                      {...register('distance', { required: 'La distance est requise', min: { value: 0, message: 'La distance doit être positive' } })}
                     />
                   </div>
                   {errors.distance && <p className="text-sm text-red-500">{errors.distance.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="estimatedDuration">Durée estimée (heures) *</Label>
+                  <label htmlFor="estimatedDuration" className="block text-sm font-medium">Durée estimée (heures) *</label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="estimatedDuration"
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      placeholder="Ex: 3.5"
-                      className="pl-10"
-                      {...register('estimatedDuration', { 
-                        required: 'La durée estimée est requise',
-                        min: { value: 0.1, message: 'La durée doit être supérieure à 0' }
-                      })}
+                    <input id="estimatedDuration" type="number" step="0.5" min="0" placeholder="Ex: 3.5" className="pl-10 w-full px-3 py-2 border rounded"
+                      {...register('estimatedDuration', { required: 'La durée estimée est requise', min: { value: 0.1, message: 'La durée doit être supérieure à 0' } })}
                     />
                   </div>
                   {errors.estimatedDuration && <p className="text-sm text-red-500">{errors.estimatedDuration.message}</p>}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Description et détails</CardTitle>
-              <CardDescription>
-                Fournissez des informations supplémentaires sur cet itinéraire
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="border rounded-xl p-4 bg-white">
+            <div className="mb-2 text-slate-900 font-semibold">Description et détails</div>
+            <div className="text-sm text-slate-600 mb-4">Fournissez des informations supplémentaires sur cet itinéraire</div>
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="description">Description de l'itinéraire</Label>
-                <Textarea
-                  id="description"
+                <label htmlFor="description" className="block text-sm font-medium">Description de l'itinéraire</label>
+                <textarea id="description" className="min-h-[120px] w-full px-3 py-2 border rounded"
                   placeholder="Décrivez l'itinéraire, les points d'intérêt, les arrêts principaux, etc."
-                  className="min-h-[120px]"
                   {...register('description')}
                 />
               </div>
               
               <div className="flex items-center justify-between space-x-2">
                 <div>
-                  <Label htmlFor="isActive">Itinéraire actif</Label>
+                  <label htmlFor="isActive" className="block text-sm font-medium">Itinéraire actif</label>
                   <p className="text-sm text-muted-foreground">
                     {watch('isActive') ? 'Visible pour les réservations' : 'Masqué des réservations'}
                   </p>
                 </div>
-                <Switch
-                  id="isActive"
+                <input id="isActive" type="checkbox" className="h-5 w-5"
                   checked={watch('isActive')}
-                  onCheckedChange={(checked) => setValue('isActive', checked)}
+                  onChange={(e) => setValue('isActive', e.target.checked)}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="border rounded-xl p-4 bg-white">
+            <div className="mb-2 text-slate-900 font-semibold">Configuration</div>
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="code">Code d'itinéraire *</Label>
-                <Input
-                  id="code"
-                  placeholder="Ex: KIN-GOM"
-                  {...register('code', { 
-                    required: 'Le code est requis',
-                    pattern: {
-                      value: /^[A-Z0-9-]+$/,
-                      message: 'Utilisez uniquement des lettres majuscules, chiffres et tirets'
-                    }
-                  })}
+                <label htmlFor="code" className="block text-sm font-medium">Code d'itinéraire *</label>
+                <input id="code" className="w-full px-3 py-2 border rounded" placeholder="Ex: KIN-GOM"
+                  {...register('code', { required: 'Le code est requis', pattern: { value: /^[A-Z0-9-]+$/, message: 'Utilisez uniquement des lettres majuscules, chiffres et tirets' } })}
                 />
                 {errors.code && <p className="text-sm text-red-500">{errors.code.message}</p>}
-                <p className="text-xs text-muted-foreground">
-                  Code unique pour identifier facilement cet itinéraire
-                </p>
+                <p className="text-xs text-muted-foreground">Code unique pour identifier facilement cet itinéraire</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="name">Nom d'affichage *</Label>
-                <Input
-                  id="name"
-                  placeholder="Ex: Kinshasa - Goma"
+                <label htmlFor="name" className="block text-sm font-medium">Nom d'affichage *</label>
+                <input id="name" className="w-full px-3 py-2 border rounded" placeholder="Ex: Kinshasa - Goma"
                   {...register('name', { required: 'Le nom est requis' })}
                 />
                 {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-                <p className="text-xs text-muted-foreground">
-                  Nom complet de l'itinéraire tel qu'il apparaîtra aux utilisateurs
-                </p>
+                <p className="text-xs text-muted-foreground">Nom complet de l'itinéraire tel qu'il apparaîtra aux utilisateurs</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type">Type d'itinéraire *</Label>
-                <Select 
-                  value={watch('type')} 
-                  onValueChange={(value) => setValue('type', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROUTE_TYPES.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Catégorisez cet itinéraire pour faciliter la recherche
-                </p>
+                <label htmlFor="type" className="block text-sm font-medium">Type d'itinéraire *</label>
+                <select id="type" className="w-full px-3 py-2 border rounded" value={watch('type')} onChange={(e) => setValue('type', e.target.value)}>
+                  {ROUTE_TYPES.map((type) => (
+                    <option key={type.id} value={type.id}>{type.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">Catégorisez cet itinéraire pour faciliter la recherche</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <div className="flex items-start">
@@ -309,28 +253,23 @@ const RouteForm = ({
       </div>
 
       <div className="flex items-center justify-end space-x-4 pt-4">
-        <Button 
-          type="button" 
-          variant="outline" 
-          disabled={isSubmitting}
-          onClick={onCancel}
-        >
-          <X className="mr-2 h-4 w-4" />
+        <button type="button" className="px-4 py-2 border rounded" disabled={isSubmitting} onClick={onCancel}>
+          <span className="mr-2">✖</span>
           Annuler
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        </button>
+        <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded disabled:opacity-50" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span className="mr-2 animate-spin">⏳</span>
               Enregistrement...
             </>
           ) : (
             <>
-              <Save className="mr-2 h-4 w-4" />
+              <span className="mr-2">💾</span>
               Enregistrer l'itinéraire
             </>
           )}
-        </Button>
+        </button>
       </div>
     </form>
   );

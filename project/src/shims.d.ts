@@ -18,6 +18,11 @@ declare module 'lucide-react' {
   export const ArrowRight: React.ComponentType<any>;
   export const LogOut: React.ComponentType<any>;
   export const Info: React.ComponentType<any>;
+  export const Mail: React.ComponentType<any>;
+  export const Lock: React.ComponentType<any>;
+  export const Eye: React.ComponentType<any>;
+  export const EyeOff: React.ComponentType<any>;
+  export const AlertCircle: React.ComponentType<any>;
   // fallback
   const Icon: React.ComponentType<any>;
   export default Icon;
